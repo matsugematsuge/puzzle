@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>宝石パズルゲーム</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    height: 100dvh;
+    background: linear-gradient(135deg, #0f001a, #1a0033);
+    color: #eee;
+    font-family: system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  #container { max-width: 440px; padding: 10px; flex: 1; }
+  #norma {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    justify-content: center;
+  }
+  .norma-item {
+    background: rgba(40,20,80,0.7);
+    border: 1px solid #6644aa;
+    border-radius: 8px;
+    padding: 8px 12px;
+    text-align: center;
+    min-width: 80px;
+    font-size: 1rem;
+    font-weight: bold;
+  }
+  .norma-green { color: #66ff99; text-shadow: 0 0 8px #66ff99; }
+  .norma-pink  { color: #ff99dd; text-shadow: 0 0 8px #ff99dd; }
+  .norma-yellow{ color: #ffff88; text-shadow: 0 0 8px #ffff88; }
+
+  #board-container {
+    background: #0a0a1a;
+    border: 5px solid #443366;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 0 30px rgba(100,50,200,0.3);
+    position: relative;
+  }
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8,42px);
+    grid-template-rows: repeat(8,42px);
+    gap: 3px;
+  }
+  .cell {
+    background: #1a1a2e;
+    border-radius: 6px;
+    transition: all 0.4s ease;
+    position: relative;
+    transform-origin: center;
+  }
+  .cell.filled { box-shadow: inset 0 0 10px #000; }
+  .color-1 { background: #a0a0b0; } /* 明るいシルバーグレー */
+  .color-2 { background: #66ff99; } /* 鮮やかエメラルドグリーン */
+  .color-3 { background: #ff99dd; } /* ビビッドローズピンク */
+  .color-4 { background: #ffff88; } /* 輝くゴールドイエロー */
+
+  .clearing {
+    animation: clearAnim 0.6s ease forwards;
+  }
+  @keyframes clearAnim {
+    0%   { opacity: 1; transform: scale(1); }
+    50%  { opacity: 0.6; transform: scale(1.15); }
+    100% { opacity: 0; transform: scale(0.6); }
+  }
+
+  .preview {
+    position: absolute;
+    inset: 0;
+    border-radius: 6px;
+    opacity: 0.35;
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #hand {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+  .piece {
+    padding: 0;
+    border: none;
+    background: transparent;
+    cursor: grab;
+  }
+  .piece-grid {
+    display: inline-grid;
+    gap: 3px;
+    box-shadow: 0 0 10px rgba(100,150,255,0.3);
+    border-radius: 6px;
+    background: rgba(60,40,100,0.3);
+    padding: 4px;
+  }
+  .piece-cell { width: 42px; height: 42px; border-radius: 6px; }
+
+  .gameover, .clear-screen {
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 2.8rem;
+    font-weight: bold;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.6s;
+  }
+  .gameover.show, .clear-screen.show { opacity: 1; pointer-events: all; }
+
+  .restart-btn {
+    margin-top: 20px;
+    padding: 12px 24px;
+    font-size: 1.2rem;
+    background: #6644aa;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .restart-btn:hover { background: #8866cc; }
+
+  #reset-btn-container {
+    margin: 20px 0;
+    text-align: center;
+  }
+
+  #move-counter {
+    margin: 10px 0;
+    font-size: 1.1rem;
+    color: #aaa;
+  }
+</style>
+</head>
+<body>
+
+<div id="container">
+  <div id="norma">
+    <div class="norma-item norma-green">♥ <span id="c2">0/5</span></div>
+    <div class="norma-item norma-pink">♥ <span id="c3">0/5</span></div>
+    <div class="norma-item norma-yellow">♥ <span id="c4">0/5</span></div>
+  </div>
+
+  <div id="board-container">
+    <div id="board"></div>
+    <div class="gameover" id="gameover">GAME OVER<br><small>クリックで再スタート</small></div>
+    <div class="clear-screen" id="clearScreen">
+      クリア！<br>
+      <div id="clearMoves"></div>
+      <button class="restart-btn" id="restartBtn">もう一度あそぶ</button>
+    </div>
+  </div>
+
+  <div id="hand"></div>
+
+  <div id="move-counter">操作回数: <span id="moveCount">0</span></div>
+
+  <div id="reset-btn-container">
+    <button class="restart-btn" id="resetBtn">リセットして最初から</button>
+  </div>
+</div>
+
+<script>
+// ここから先は前の完全版と同じ（変更なし）
+const SIZE = 8;
+const TARGET = 5;
+const NORMA_COLORS = [2,3,4];
+
+const SHAPES = [
+  [[0,0],[1,0],[2,0],[2,1]],
+  [[0,0],[0,1],[0,2],[1,2]],
+  [[0,0],[0,1]],
+  [[0,0],[0,1],[0,2],[0,3]],
+  [[0,0],[0,1],[1,0],[1,1]],
+  [[0,0],[0,1],[0,2],[1,1]],
+  [[1,0],[1,1],[1,2],[0,1]],
+  [[0,0],[1,0],[2,0],[1,1]]
+];
+
+let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+let hand = [];
+let cleared = new Set();
+let counts = {2:0, 3:0, 4:0};
+let gameOver = false;
+let currentDragPiece = null;
+let currentPreviewCells = [];
+let dragOffset = { dx: 0, dy: 0 };
+let moveCount = 0;
+
+const boardEl = document.getElementById('board');
+const handEl = document.getElementById('hand');
+const gameoverEl = document.getElementById('gameover');
+const clearScreen = document.getElementById('clearScreen');
+const clearMoves = document.getElementById('clearMoves');
+const restartBtn = document.getElementById('restartBtn');
+const resetBtn = document.getElementById('resetBtn');
+const moveCountEl = document.getElementById('moveCount');
+
+function init() {
+  boardEl.innerHTML = '';
+  board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+
+  for(let y = 0; y < SIZE; y++) {
+    for(let x = 0; x < SIZE; x++) {
+      const c = document.createElement('div');
+      c.className = 'cell';
+      c.dataset.x = x;
+      c.dataset.y = y;
+      boardEl.appendChild(c);
+    }
+  }
+
+  for(let i = 0; i < 10; i++) {
+    let x, y;
+    do {
+      x = Math.floor(Math.random() * SIZE);
+      y = Math.floor(Math.random() * SIZE);
+    } while(board[y][x]);
+    board[y][x] = Math.floor(Math.random() * 4) + 1;
+  }
+
+  renderBoard();
+  hand = [];
+  handEl.innerHTML = '';
+  refillHand();
+  cleared.clear();
+  counts = {2:0, 3:0, 4:0};
+  moveCount = 0;
+  updateMoveCount();
+  updateNorma();
+  gameOver = false;
+  gameoverEl.classList.remove('show');
+  clearScreen.classList.remove('show');
+}
+
+function updateMoveCount() {
+  moveCountEl.textContent = moveCount;
+}
+
+function renderBoard() {
+  document.querySelectorAll('#board .cell').forEach(el => {
+    const x = +el.dataset.x, y = +el.dataset.y;
+    const v = board[y][x];
+    el.className = 'cell' + (v ? ` color-${v} filled` : '');
+  });
+}
+
+function createPiece(origShape, cellColors) {
+  const minY = Math.min(...origShape.map(p => p[0]));
+  const minX = Math.min(...origShape.map(p => p[1]));
+
+  const shape = origShape.map(([y,x]) => [y - minY, x - minX]);
+
+  const h = 1 + Math.max(...shape.map(p => p[0]));
+  const w = 1 + Math.max(...shape.map(p => p[1]));
+
+  const grid = document.createElement('div');
+  grid.className = 'piece-grid';
+  grid.style.gridTemplateColumns = `repeat(${w}, auto)`;
+  grid.style.gridTemplateRows = `repeat(${h}, auto)`;
+
+  let cellIndex = 0;
+  for(let gy = 0; gy < h; gy++) {
+    for(let gx = 0; gx < w; gx++) {
+      const cell = document.createElement('div');
+      cell.className = 'piece-cell';
+      if(shape.some(([sy,sx]) => sy === gy && sx === gx)) {
+        const thisColor = cellColors[cellIndex % cellColors.length];
+        cell.className += ` filled color-${thisColor}`;
+        cellIndex++;
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'piece';
+  wrapper.appendChild(grid);
+  wrapper.draggable = true;
+
+  wrapper._shape = shape;
+  wrapper._cellColors = cellColors;
+
+  wrapper.addEventListener('dragstart', e => {
+    if(gameOver) return;
+    const idx = hand.findIndex(p => p.el === wrapper);
+    e.dataTransfer.setData('text/plain', idx);
+    currentDragPiece = hand[idx];
+
+    const rect = wrapper.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+
+    const cellSize = 45;
+    dragOffset.dx = Math.min(Math.max(0, Math.floor(mouseX / cellSize)), w - 1);
+    dragOffset.dy = Math.min(Math.max(0, Math.floor(mouseY / cellSize)), h - 1);
+
+    wrapper.classList.add('dragging');
+  });
+
+  wrapper.addEventListener('dragend', () => {
+    currentDragPiece = null;
+    wrapper.classList.remove('dragging');
+    clearPreview();
+  });
+
+  return { el: wrapper, shape, cellColors };
+}
+
+function refillHand() {
+  if (hand.length === 0) {
+    for (let i = 0; i < 3; i++) {
+      const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+
+      let availColors = [1,2,3,4].filter(c => !cleared.has(c));
+      if (availColors.length === 0) availColors = [1];
+
+      const normaAvail = availColors.filter(c => NORMA_COLORS.includes(c));
+      let selectedColors = [];
+
+      while (selectedColors.length < shape.length) {
+        if (selectedColors.length < 1 && normaAvail.length > 0) {
+          selectedColors.push(normaAvail[Math.floor(Math.random() * normaAvail.length)]);
+        } else {
+          selectedColors.push(availColors[Math.floor(Math.random() * availColors.length)]);
+        }
+      }
+
+      const p = createPiece(shape, selectedColors);
+      hand.push(p);
+      handEl.appendChild(p.el);
+    }
+  }
+}
+
+function clearPreview() {
+  currentPreviewCells.forEach(cell => cell.innerHTML = '');
+  currentPreviewCells = [];
+}
+
+function showPreview(baseY, baseX, piece) {
+  clearPreview();
+
+  let canPreview = true;
+  for(const [dy, dx] of piece.shape) {
+    const ny = baseY + dy;
+    const nx = baseX + dx;
+    if(nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE || board[ny][nx] !== 0) {
+      canPreview = false;
+      break;
+    }
+  }
+
+  if(!canPreview) return;
+
+  for(let i = 0; i < piece.shape.length; i++) {
+    const [dy, dx] = piece.shape[i];
+    const ny = baseY + dy;
+    const nx = baseX + dx;
+    const targetCell = boardEl.querySelector(`[data-x="${nx}"][data-y="${ny}"]`);
+    if(targetCell) {
+      const preview = document.createElement('div');
+      const thisColor = piece.cellColors[i % piece.cellColors.length];
+      preview.className = `preview color-${thisColor}`;
+      targetCell.appendChild(preview);
+      currentPreviewCells.push(targetCell);
+    }
+  }
+}
+
+boardEl.addEventListener('dragover', e => {
+  e.preventDefault();
+  if(!currentDragPiece) return;
+
+  const cell = e.target.closest('.cell');
+  if(!cell) return;
+
+  const x = +cell.dataset.x;
+  const y = +cell.dataset.y;
+
+  const baseX = x - dragOffset.dx;
+  const baseY = y - dragOffset.dy;
+
+  showPreview(baseY, baseX, currentDragPiece);
+});
+
+boardEl.addEventListener('drop', e => {
+  if(gameOver) return;
+  e.preventDefault();
+
+  const idx = parseInt(e.dataTransfer.getData('text/plain'));
+  if(isNaN(idx) || idx < 0 || idx >= hand.length) return;
+
+  const piece = hand[idx];
+  const cell = e.target.closest('.cell');
+  if(!cell) return;
+
+  const dropX = +cell.dataset.x;
+  const dropY = +cell.dataset.y;
+
+  const baseX = dropX - dragOffset.dx;
+  const baseY = dropY - dragOffset.dy;
+
+  let canPlace = true;
+  for(const [dy, dx] of piece.shape) {
+    const nx = baseX + dx;
+    const ny = baseY + dy;
+    if(nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE || board[ny][nx] !== 0) {
+      canPlace = false;
+      break;
+    }
+  }
+
+  clearPreview();
+
+  if(!canPlace) {
+    cell.style.background = 'rgba(255,60,60,0.4)';
+    setTimeout(() => cell.style.background = '', 300);
+    return;
+  }
+
+  for(let i = 0; i < piece.shape.length; i++) {
+    const [dy, dx] = piece.shape[i];
+    const nx = baseX + dx;
+    const ny = baseY + dy;
+    board[ny][nx] = piece.cellColors[i % piece.cellColors.length];
+  }
+
+  piece.el.remove();
+  hand.splice(idx, 1);
+
+  moveCount++;
+  updateMoveCount();
+
+  if (hand.length === 0) {
+    refillHand();
+  }
+
+  renderBoard();
+  checkClear();
+});
+
+function checkClear() {
+  let changed = false;
+  const erased = {1:0,2:0,3:0,4:0};
+  const toAnimate = [];
+
+  for(let y = 0; y < SIZE; y++) {
+    if(board[y].every(v => v > 0)) {
+      for(let x = 0; x < SIZE; x++) {
+        const cell = boardEl.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+        if(cell) toAnimate.push(cell);
+        erased[board[y][x]]++;
+        board[y][x] = 0;
+      }
+      changed = true;
+    }
+  }
+
+  for(let x = 0; x < SIZE; x++) {
+    if(board.every(row => row[x] > 0)) {
+      for(let y = 0; y < SIZE; y++) {
+        const cell = boardEl.querySelector(`[data-x="${x}"][data-y="${y}"]`);
+        if(cell) toAnimate.push(cell);
+        erased[board[y][x]]++;
+        board[y][x] = 0;
+      }
+      changed = true;
+    }
+  }
+
+  if(changed) {
+    toAnimate.forEach(cell => cell.classList.add('clearing'));
+
+    setTimeout(() => {
+      renderBoard();
+
+      NORMA_COLORS.forEach(c => {
+        counts[c] += (erased[c] || 0);
+        if(counts[c] >= TARGET && !cleared.has(c)) {
+          cleared.add(c);
+          for(let y = 0; y < SIZE; y++) for(let x = 0; x < SIZE; x++) {
+            if(board[y][x] === c) board[y][x] = 1;
+          }
+          hand.forEach(p => {
+            for(let i = 0; i < p.cellColors.length; i++) {
+              if(p.cellColors[i] === c) p.cellColors[i] = 1;
+            }
+            p.el.querySelectorAll('.filled').forEach(el => {
+              el.classList.remove(`color-${c}`);
+              el.classList.add('color-1');
+            });
+          });
+          renderBoard();
+        }
+      });
+
+      updateNorma();
+
+      if(NORMA_COLORS.every(c => counts[c] >= TARGET)) {
+        gameOver = true;
+        clearMoves.textContent = `クリア操作回数: ${moveCount}回`;
+        clearScreen.classList.add('show');
+      } else if(hand.length === 3 && !canPlaceAny()) {
+        gameOver = true;
+        gameoverEl.classList.add('show');
+      }
+    }, 600);
+  }
+}
+
+function canPlaceAny() {
+  for(const p of hand) {
+    for(let y = 0; y < SIZE; y++) for(let x = 0; x < SIZE; x++) {
+      let ok = true;
+      for(const [dy, dx] of p.shape) {
+        if(x + dx < 0 || x + dx >= SIZE || y + dy < 0 || y + dy >= SIZE || board[y + dy][x + dx] !== 0) {
+          ok = false;
+          break;
+        }
+      }
+      if(ok) return true;
+    }
+  }
+  return false;
+}
+
+function updateNorma() {
+  document.getElementById('c2').textContent = `${counts[2]}/${TARGET}`;
+  document.getElementById('c3').textContent = `${counts[3]}/${TARGET}`;
+  document.getElementById('c4').textContent = `${counts[4]}/${TARGET}`;
+}
+
+init();
+gameoverEl.addEventListener('click', init);
+restartBtn.addEventListener('click', init);
+resetBtn.addEventListener('click', init);
+</script>
+</body>
+</html>
