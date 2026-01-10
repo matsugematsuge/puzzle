@@ -32,6 +32,7 @@
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
+    min-height: 100%;
   }
   #norma {
     display: flex;
@@ -62,7 +63,7 @@
     box-shadow: 0 8px 25px rgba(0,0,0,0.6);
     position: relative;
     flex: 1;
-    max-height: 55vh; /* スマホで見切れ防止のため高さをさらに抑える */
+    max-height: 60vh; /* スマホで見切れ防止のため調整 */
     aspect-ratio: 1 / 1;
     width: 100%;
   }
@@ -176,11 +177,6 @@
     margin: 8px 0;
     font-size: 1.1rem;
     color: #aaa;
-  }
-
-  @media (min-width: 768px) {
-    #container { max-width: 520px; }
-    .piece-cell { width: 42px; height: 42px; padding-bottom: 0; }
   }
 </style>
 </head>
