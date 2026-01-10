@@ -5,64 +5,77 @@
 <title>宝石パズルゲーム</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
-    margin: 0;
-    padding: 0;
     height: 100dvh;
-    background: linear-gradient(135deg, #0f001a, #1a0033);
+    background: linear-gradient(135deg, #0f001a, #2a004a);
     color: #eee;
     font-family: system-ui, sans-serif;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
+    padding: 10px;
+  }
+  #container {
+    width: 100%;
+    max-width: 380px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
     justify-content: center;
   }
-  #container { max-width: 440px; padding: 10px; flex: 1; }
   #norma {
     display: flex;
-    gap: 8px;
-    margin-bottom: 12px;
+    gap: 12px;
+    margin-bottom: 15px;
     justify-content: center;
   }
   .norma-item {
-    background: rgba(40,20,80,0.7);
-    border: 1px solid #6644aa;
-    border-radius: 8px;
-    padding: 8px 12px;
-    text-align: center;
-    min-width: 80px;
-    font-size: 1rem;
+    background: linear-gradient(145deg, #3a1a5a, #5a2a8a);
+    border: 3px solid #aa66ff;
+    border-radius: 20px;
+    width: 100px;
+    height: 70px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
     font-weight: bold;
+    box-shadow: 0 4px 12px rgba(170,102,255,0.5);
+    backdrop-filter: blur(4px);
   }
-  .norma-green { color: #66ff99; text-shadow: 0 0 6px #66ff99; }
-  .norma-pink  { color: #ff99dd; text-shadow: 0 0 6px #ff99dd; }
-  .norma-yellow{ color: #ffff88; text-shadow: 0 0 6px #ffff88; }
+  .norma-green span { color: #66ff99; text-shadow: 0 0 8px #66ff99; }
+  .norma-pink span  { color: #ff99dd; text-shadow: 0 0 8px #ff99dd; }
+  .norma-yellow span{ color: #ffff88; text-shadow: 0 0 8px #ffff88; }
 
   #board-container {
     background: #0a0a1a;
-    border: 5px solid #443366;
-    border-radius: 0; /* 4隅の角丸を削除 */
-    padding: 8px;
-    box-shadow: 0 0 30px rgba(100,50,200,0.3);
-    position: relative;
+    border: 10px solid #5a2a8a;
+    border-radius: 24px;
+    padding: 12px;
+    box-shadow: 0 0 40px rgba(90,42,138,0.6);
+    width: 100%;
+    aspect-ratio: 1 / 1;
   }
   #board {
+    height: 100%;
+    width: 100%;
     display: grid;
-    grid-template-columns: repeat(8,42px);
-    grid-template-rows: repeat(8,42px);
-    gap: 3px;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    gap: 6px;
+    background: #111122;
+    border-radius: 16px;
+    overflow: hidden;
   }
   .cell {
-    background: #1a1a2e;
-    border-radius: 6px;
-    transition: all 0.4s ease;
+    background: #222233;
+    border-radius: 8px;
     position: relative;
-    transform-origin: center;
-    width: 42px;
-    height: 42px;
   }
-  .cell.filled { box-shadow: inset 0 0 10px #000; }
-  .color-1 { background: #a0a0b0; }
+  .cell.filled { box-shadow: inset 0 0 12px #000; }
+  .color-1 { background: #777788; }
   .color-2 { background: #66ff99; }
   .color-3 { background: #ff99dd; }
   .color-4 { background: #ffff88; }
@@ -72,41 +85,47 @@
   }
   @keyframes clearAnim {
     0%   { opacity: 1; transform: scale(1); }
-    50%  { opacity: 0.6; transform: scale(1.15); }
-    100% { opacity: 0; transform: scale(0.6); }
+    50%  { opacity: 0.7; transform: scale(1.2); }
+    100% { opacity: 0; transform: scale(0.5); }
   }
 
   .preview {
     position: absolute;
     inset: 0;
-    border-radius: 6px;
-    opacity: 0.35;
+    border-radius: 8px;
+    opacity: 0.4;
     pointer-events: none;
     z-index: 10;
   }
 
   #hand {
-    margin: 20px 0;
+    margin: 25px 0;
     display: flex;
     justify-content: center;
-    gap: 20px;
+    gap: 15px;
     flex-wrap: wrap;
   }
   .piece {
-    padding: 0;
-    border: none;
-    background: transparent;
+    padding: 8px;
+    border-radius: 12px;
+    background: rgba(90,42,138,0.3);
+    box-shadow: 0 4px 15px rgba(90,42,138,0.5);
+    backdrop-filter: blur(4px);
     cursor: grab;
   }
   .piece-grid {
     display: inline-grid;
-    gap: 3px;
-    box-shadow: 0 0 10px rgba(100,150,255,0.3);
-    border-radius: 6px;
-    background: rgba(60,40,100,0.3);
-    padding: 0;
+    gap: 4px;
   }
-  .piece-cell { width: 42px; height: 42px; border-radius: 6px; }
+  .piece-cell { width: 50px; height: 50px; border-radius: 8px; }
+
+  #move-counter {
+    margin: 15px 0;
+    font-size: 1.2rem;
+    color: #aa88ff;
+    text-shadow: 0 0 6px #aa88ff;
+    text-align: center;
+  }
 
   .gameover, .clear-screen {
     position: absolute;
@@ -127,26 +146,20 @@
 
   .restart-btn {
     margin-top: 20px;
-    padding: 12px 24px;
-    font-size: 1.2rem;
-    background: #6644aa;
+    padding: 12px 30px;
+    font-size: 1.3rem;
+    background: linear-gradient(145deg, #6644aa, #aa66ff);
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: background 0.3s;
+    box-shadow: 0 4px 12px rgba(170,102,255,0.5);
   }
-  .restart-btn:hover { background: #8866cc; }
+  .restart-btn:hover { transform: scale(1.05); }
 
   #reset-btn-container {
     margin: 20px 0;
     text-align: center;
-  }
-
-  #move-counter {
-    margin: 10px 0;
-    font-size: 1.1rem;
-    color: #aaa;
   }
 </style>
 </head>
@@ -154,9 +167,9 @@
 
 <div id="container">
   <div id="norma">
-    <div class="norma-item norma-green">♥ <span id="c2">0/5</span></div>
-    <div class="norma-item norma-pink">♥ <span id="c3">0/5</span></div>
-    <div class="norma-item norma-yellow">♥ <span id="c4">0/5</span></div>
+    <div class="norma-item norma-green">💚 <span id="c2">0/5</span></div>
+    <div class="norma-item norma-pink">💗 <span id="c3">0/5</span></div>
+    <div class="norma-item norma-yellow">💛 <span id="c4">0/5</span></div>
   </div>
 
   <div id="board-container">
