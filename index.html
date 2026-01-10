@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <title>宝石パズルゲーム</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   body {
     margin: 0;
@@ -34,14 +34,14 @@
     font-size: 1rem;
     font-weight: bold;
   }
-  .norma-green { color: #66ff99; text-shadow: 0 0 8px #66ff99; }
-  .norma-pink  { color: #ff99dd; text-shadow: 0 0 8px #ff99dd; }
-  .norma-yellow{ color: #ffff88; text-shadow: 0 0 8px #ffff88; }
+  .norma-green { color: #66ff99; text-shadow: 0 0 6px #66ff99; }
+  .norma-pink  { color: #ff99dd; text-shadow: 0 0 6px #ff99dd; }
+  .norma-yellow{ color: #ffff88; text-shadow: 0 0 6px #ffff88; }
 
   #board-container {
     background: #0a0a1a;
     border: 5px solid #443366;
-    border-radius: 12px;
+    border-radius: 0; /* 4隅の角丸を削除 */
     padding: 8px;
     box-shadow: 0 0 30px rgba(100,50,200,0.3);
     position: relative;
@@ -58,12 +58,14 @@
     transition: all 0.4s ease;
     position: relative;
     transform-origin: center;
+    width: 42px;
+    height: 42px;
   }
   .cell.filled { box-shadow: inset 0 0 10px #000; }
-  .color-1 { background: #a0a0b0; } /* 明るいシルバーグレー */
-  .color-2 { background: #66ff99; } /* 鮮やかエメラルドグリーン */
-  .color-3 { background: #ff99dd; } /* ビビッドローズピンク */
-  .color-4 { background: #ffff88; } /* 輝くゴールドイエロー */
+  .color-1 { background: #a0a0b0; }
+  .color-2 { background: #66ff99; }
+  .color-3 { background: #ff99dd; }
+  .color-4 { background: #ffff88; }
 
   .clearing {
     animation: clearAnim 0.6s ease forwards;
@@ -102,7 +104,7 @@
     box-shadow: 0 0 10px rgba(100,150,255,0.3);
     border-radius: 6px;
     background: rgba(60,40,100,0.3);
-    padding: 4px;
+    padding: 0;
   }
   .piece-cell { width: 42px; height: 42px; border-radius: 6px; }
 
@@ -159,7 +161,7 @@
 
   <div id="board-container">
     <div id="board"></div>
-    <div class="gameover" id="gameover">GAME OVER<br><small>クリックで再スタート</small></div>
+    <div class="gameover" id="gameover">GAME OVER<br><small>タップで再スタート</small></div>
     <div class="clear-screen" id="clearScreen">
       クリア！<br>
       <div id="clearMoves"></div>
@@ -177,7 +179,6 @@
 </div>
 
 <script>
-// ここから先は前の完全版と同じ（変更なし）
 const SIZE = 8;
 const TARGET = 5;
 const NORMA_COLORS = [2,3,4];
