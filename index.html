@@ -27,15 +27,16 @@
   #container {
     width: 100%;
     max-width: 480px;
-    padding: 10px 10px 5px;
+    padding: 5px 10px;
     flex: 1;
     display: flex;
     flex-direction: column;
+    justify-content: flex-start;
   }
   #norma {
     display: flex;
-    gap: 10px;
-    margin-bottom: 8px;
+    gap: 8px;
+    margin: 5px 0;
     justify-content: center;
     flex-wrap: wrap;
   }
@@ -43,10 +44,10 @@
     background: rgba(40,20,80,0.7);
     border: 2px solid #6644aa;
     border-radius: 12px;
-    padding: 8px 12px;
+    padding: 6px 10px;
     text-align: center;
-    min-width: 70px;
-    font-size: 0.9rem;
+    min-width: 65px;
+    font-size: 0.85rem;
     font-weight: bold;
   }
   .norma-green { color: #66ff99; text-shadow: 0 0 6px #66ff99; }
@@ -57,11 +58,11 @@
     background: #0a0a1a;
     border: 8px solid #443366;
     border-radius: 0;
-    padding: 8px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    padding: 6px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
     position: relative;
     flex: 1;
-    max-height: 60vh; /* スマホで見切れ防止のため高さを抑える */
+    max-height: 55vh; /* スマホで見切れ防止のため高さをさらに抑える */
     aspect-ratio: 1 / 1;
     width: 100%;
   }
@@ -71,7 +72,7 @@
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    gap: 4px;
+    gap: 3px;
     background: rgba(0,0,0,0.4);
     border-radius: 0;
     overflow: hidden;
@@ -108,10 +109,10 @@
   }
 
   #hand {
-    margin: 10px 0;
+    margin: 8px 0;
     display: flex;
     justify-content: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
   }
   .piece {
@@ -132,7 +133,7 @@
   .piece-cell {
     width: 100%;
     height: 0;
-    padding-bottom: 100%; /* 正方形を保つ */
+    padding-bottom: 100%;
     border-radius: 0;
   }
 
@@ -154,9 +155,9 @@
   .gameover.show, .clear-screen.show { opacity: 1; pointer-events: all; }
 
   .restart-btn {
-    margin-top: 20px;
-    padding: 12px 30px;
-    font-size: 1.3rem;
+    margin-top: 15px;
+    padding: 10px 25px;
+    font-size: 1.2rem;
     background: #6644aa;
     color: white;
     border: none;
@@ -167,13 +168,13 @@
   .restart-btn:hover { background: #8866cc; }
 
   #reset-btn-container {
-    margin: 20px 0;
+    margin: 15px 0;
     text-align: center;
   }
 
   #move-counter {
-    margin: 10px 0;
-    font-size: 1.2rem;
+    margin: 8px 0;
+    font-size: 1.1rem;
     color: #aaa;
   }
 
@@ -273,7 +274,7 @@ function init() {
   renderBoard();
   hand = [];
   handEl.innerHTML = '';
-  refillHand(); // ここで必ず3つ補充
+  refillHand(); // 初期表示を確実に
   cleared.clear();
   counts = {2:0, 3:0, 4:0};
   moveCount = 0;
@@ -451,28 +452,28 @@ function createPiece(origShape, cellColors) {
 }
 
 function refillHand() {
-  if (hand.length === 0) {
-    for (let i = 0; i < 3; i++) {
-      const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+  hand = []; // 確実にクリア
+  handEl.innerHTML = ''; // 表示もクリア
+  for (let i = 0; i < 3; i++) {
+    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
 
-      let availColors = [1,2,3,4].filter(c => !cleared.has(c));
-      if (availColors.length === 0) availColors = [1];
+    let availColors = [1,2,3,4].filter(c => !cleared.has(c));
+    if (availColors.length === 0) availColors = [1];
 
-      const normaAvail = availColors.filter(c => NORMA_COLORS.includes(c));
-      let selectedColors = [];
+    const normaAvail = availColors.filter(c => NORMA_COLORS.includes(c));
+    let selectedColors = [];
 
-      while (selectedColors.length < shape.length) {
-        if (selectedColors.length < 1 && normaAvail.length > 0) {
-          selectedColors.push(normaAvail[Math.floor(Math.random() * normaAvail.length)]);
-        } else {
-          selectedColors.push(availColors[Math.floor(Math.random() * availColors.length)]);
-        }
+    while (selectedColors.length < shape.length) {
+      if (selectedColors.length < 1 && normaAvail.length > 0) {
+        selectedColors.push(normaAvail[Math.floor(Math.random() * normaAvail.length)]);
+      } else {
+        selectedColors.push(availColors[Math.floor(Math.random() * availColors.length)]);
       }
-
-      const p = createPiece(shape, selectedColors);
-      hand.push(p);
-      handEl.appendChild(p.el);
     }
+
+    const p = createPiece(shape, selectedColors);
+    hand.push(p);
+    handEl.appendChild(p.el);
   }
 }
 
