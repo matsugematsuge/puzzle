@@ -6,10 +6,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   * {
-    touch-action: none !important; /* ブラウザのタッチスクロールを強制無効 */
+    touch-action: none !important;
     user-select: none;
     -webkit-user-select: none;
     -webkit-touch-callout: none;
+    box-sizing: border-box;
   }
   body {
     margin: 0;
@@ -347,6 +348,25 @@ function createPiece(origShape, cellColors) {
       if(!currentDragPiece) return;
       e.preventDefault();
       e.stopPropagation();
+
+      const touch = e.touches[0];
+      const rect = boardEl.getBoundingClientRect();
+      const relX = touch.clientX - rect.left;
+      const relY = touch.clientY - rect.top;
+
+      const cellWidth = boardEl.clientWidth / SIZE;
+      const cellHeight = boardEl.clientHeight / SIZE;
+
+      const dropX = Math.floor(relX / cellWidth);
+      const dropY = Math.floor(relY / cellHeight);
+
+      if(dropX >= 0 && dropX < SIZE && dropY >= 0 && dropY < SIZE) {
+        const baseX = dropX - dragOffset.dx;
+        const baseY = dropY - dragOffset.dy;
+        showPreview(baseY, baseX, currentDragPiece);
+      } else {
+        clearPreview();
+      }
     });
 
     wrapper.addEventListener('touchend', e => {
