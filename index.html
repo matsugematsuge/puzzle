@@ -26,17 +26,15 @@
   }
   #container {
     width: 100%;
-    max-width: 480px;
-    padding: 5px 10px;
+    padding: 5px;
     flex: 1;
     display: flex;
     flex-direction: column;
     justify-content: flex-start;
-    min-height: 100%;
   }
   #norma {
     display: flex;
-    gap: 8px;
+    gap: 6px;
     margin: 5px 0;
     justify-content: center;
     flex-wrap: wrap;
@@ -44,26 +42,26 @@
   .norma-item {
     background: rgba(40,20,80,0.7);
     border: 2px solid #6644aa;
-    border-radius: 12px;
-    padding: 6px 10px;
+    border-radius: 10px;
+    padding: 5px 8px;
     text-align: center;
-    min-width: 65px;
-    font-size: 0.85rem;
+    min-width: 60px;
+    font-size: 0.8rem;
     font-weight: bold;
   }
-  .norma-green { color: #66ff99; text-shadow: 0 0 6px #66ff99; }
-  .norma-pink  { color: #ff99dd; text-shadow: 0 0 6px #ff99dd; }
-  .norma-yellow{ color: #ffff88; text-shadow: 0 0 6px #ffff88; }
+  .norma-green { color: #66ff99; text-shadow: 0 0 5px #66ff99; }
+  .norma-pink  { color: #ff99dd; text-shadow: 0 0 5px #ff99dd; }
+  .norma-yellow{ color: #ffff88; text-shadow: 0 0 5px #ffff88; }
 
   #board-container {
     background: #0a0a1a;
-    border: 8px solid #443366;
+    border: 6px solid #443366;
     border-radius: 0;
-    padding: 6px;
-    box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+    padding: 5px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
     position: relative;
     flex: 1;
-    max-height: 60vh; /* スマホで見切れ防止のため調整 */
+    max-height: 50vh; /* スマホで見切れ防止のため小さめに */
     aspect-ratio: 1 / 1;
     width: 100%;
   }
@@ -110,10 +108,10 @@
   }
 
   #hand {
-    margin: 8px 0;
+    margin: 5px 0;
     display: flex;
     justify-content: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
   }
   .piece {
@@ -147,7 +145,7 @@
     align-items: center;
     justify-content: center;
     color: #fff;
-    font-size: 2.5rem;
+    font-size: 2.2rem;
     font-weight: bold;
     opacity: 0;
     pointer-events: none;
@@ -156,26 +154,26 @@
   .gameover.show, .clear-screen.show { opacity: 1; pointer-events: all; }
 
   .restart-btn {
-    margin-top: 15px;
+    margin-top: 10px;
     padding: 10px 25px;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     background: #6644aa;
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     transition: background 0.3s;
   }
   .restart-btn:hover { background: #8866cc; }
 
   #reset-btn-container {
-    margin: 15px 0;
+    margin: 10px 0;
     text-align: center;
   }
 
   #move-counter {
-    margin: 8px 0;
-    font-size: 1.1rem;
+    margin: 5px 0;
+    font-size: 1rem;
     color: #aaa;
   }
 </style>
