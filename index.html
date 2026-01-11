@@ -93,8 +93,8 @@
     height: 100%;
     width: 100%;
     display: grid;
-    grid-template-columns: repeat(8, 45px); /* 45px固定 */
-    grid-template-rows: repeat(8, 45px); /* 45px固定 */
+    grid-template-columns: repeat(8, 46px); /* 46px固定 */
+    grid-template-rows: repeat(8, 46px); /* 46px固定 */
     gap: 2px;
     background: rgba(0,0,0,0.4);
     border-radius: 0;
@@ -106,8 +106,8 @@
     border-radius: 0;
     transition: all 0.4s ease;
     position: relative;
-    width: 45px;
-    height: 45px;
+    width: 46px;
+    height: 46px;
   }
   .cell.filled { box-shadow: inset 0 0 8px #000; }
   .color-1 { background: #a0a0b0; }
@@ -156,8 +156,8 @@
     padding: 0;
   }
   .piece-cell {
-    width: 45px;
-    height: 45px;
+    width: 46px;
+    height: 46px;
     border-radius: 0;
   }
 
@@ -225,10 +225,28 @@
 </div>
 
 <script>
-// 省略せず完全コードを記述（ロジックは前回と同じ）
 const SIZE = 8;
 const TARGET = 5;
 const NORMA_COLORS = [2,3,4];
+
+// ノルマをランダムで決定（2色が5個、1色が10個）
+let normaTargets = {};
+function setRandomNorma() {
+  const colors = [2,3,4];
+  const perm = colors.sort(() => Math.random() - 0.5); // ランダムシャッフル
+  normaTargets = {
+    [perm[0]]: 5,
+    [perm[1]]: 5,
+    [perm[2]]: 10
+  };
+  updateNormaDisplay();
+}
+
+function updateNormaDisplay() {
+  document.getElementById('c2').textContent = `0/${normaTargets[2] || 5}`;
+  document.getElementById('c3').textContent = `0/${normaTargets[3] || 5}`;
+  document.getElementById('c4').textContent = `0/${normaTargets[4] || 5}`;
+}
 
 const SHAPES = [
   [[0,0],[1,0],[2,0],[2,1]],
@@ -262,6 +280,8 @@ const resetBtn = document.getElementById('resetBtn');
 const moveCountEl = document.getElementById('moveCount');
 
 function init() {
+  setRandomNorma(); // ノルマをランダム決定
+
   boardEl.innerHTML = '';
   board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
 
@@ -287,7 +307,7 @@ function init() {
   renderBoard();
   hand = [];
   handEl.innerHTML = '';
-  refillHand(); // 初期表示を確実に
+  refillHand();
   cleared.clear();
   counts = {2:0, 3:0, 4:0};
   moveCount = 0;
@@ -363,7 +383,7 @@ function createPiece(origShape, cellColors) {
       const relY = touch.clientY - rect.top;
 
       const cell = wrapper.querySelector('.piece-cell');
-      const cellSize = cell ? cell.offsetWidth : 45;
+      const cellSize = cell ? cell.offsetWidth : 46;
       dragOffset.dx = Math.min(Math.max(0, Math.floor(relX / cellSize)), w - 1);
       dragOffset.dy = Math.min(Math.max(0, Math.floor(relY / cellSize)), h - 1);
 
@@ -634,7 +654,7 @@ function checkClear() {
 
       NORMA_COLORS.forEach(c => {
         counts[c] += (erased[c] || 0);
-        if(counts[c] >= TARGET && !cleared.has(c)) {
+        if(counts[c] >= (normaTargets[c] || 5) && !cleared.has(c)) {
           cleared.add(c);
           for(let y = 0; y < SIZE; y++) for(let x = 0; x < SIZE; x++) {
             if(board[y][x] === c) board[y][x] = 1;
@@ -654,7 +674,7 @@ function checkClear() {
 
       updateNorma();
 
-      if(NORMA_COLORS.every(c => counts[c] >= TARGET)) {
+      if(NORMA_COLORS.every(c => counts[c] >= normaTargets[c])) {
         gameOver = true;
         clearMoves.textContent = `クリア操作回数: ${moveCount}回`;
         clearScreen.classList.add('show');
@@ -683,9 +703,9 @@ function canPlaceAny() {
 }
 
 function updateNorma() {
-  document.getElementById('c2').textContent = `${counts[2]}/${TARGET}`;
-  document.getElementById('c3').textContent = `${counts[3]}/${TARGET}`;
-  document.getElementById('c4').textContent = `${counts[4]}/${TARGET}`;
+  document.getElementById('c2').textContent = `${counts[2]}/${normaTargets[2] || 5}`;
+  document.getElementById('c3').textContent = `${counts[3]}/${normaTargets[3] || 5}`;
+  document.getElementById('c4').textContent = `${counts[4]}/${normaTargets[4] || 5}`;
 }
 
 init();
