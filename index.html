@@ -85,7 +85,7 @@
     box-shadow: 0 5px 20px rgba(0,0,0,0.6);
     position: relative;
     flex: 1;
-    max-height: 55vh;
+    max-height: 58vh; /* スマホで見切れ防止のため調整 */
     aspect-ratio: 1 / 1;
     width: 100%;
   }
@@ -95,7 +95,7 @@
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    gap: 3px;
+    gap: 3px; /* 隙間を少し狭めて横幅確保 */
     background: rgba(0,0,0,0.4);
     border-radius: 0;
     overflow: hidden;
