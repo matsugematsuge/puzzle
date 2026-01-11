@@ -27,7 +27,7 @@
   #container {
     width: 100%;
     max-width: 480px;
-    padding: 5px 10px;
+    padding: 5px 5px 0;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -37,24 +37,24 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
   #norma {
     display: flex;
-    gap: 8px;
+    gap: 6px;
   }
   .norma-item {
     background: rgba(40,20,80,0.7);
     border: 2px solid #6644aa;
-    border-radius: 12px;
-    padding: 6px 10px;
+    border-radius: 10px;
+    padding: 5px 8px;
     text-align: center;
-    min-width: 65px;
-    height: 40px;
+    min-width: 60px;
+    height: 35px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: bold;
   }
   .norma-green { color: #66ff99; text-shadow: 0 0 5px #66ff99; }
@@ -64,13 +64,13 @@
   #reset-btn {
     background: rgba(40,20,80,0.7);
     border: 2px solid #6644aa;
-    border-radius: 12px;
-    width: 40px;
-    height: 40px;
+    border-radius: 10px;
+    width: 35px;
+    height: 35px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: #aaa;
     cursor: pointer;
     transition: background 0.3s;
@@ -81,11 +81,11 @@
     background: #0a0a1a;
     border: 6px solid #443366;
     border-radius: 0;
-    padding: 5px;
+    padding: 4px;
     box-shadow: 0 5px 20px rgba(0,0,0,0.6);
     position: relative;
     flex: 1;
-    max-height: 58vh; /* スマホで見切れ防止のため調整 */
+    max-height: 60vh;
     aspect-ratio: 1 / 1;
     width: 100%;
   }
@@ -95,7 +95,7 @@
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(8, 1fr);
-    gap: 3px; /* 隙間を少し狭めて横幅確保 */
+    gap: 2px; /* 隙間をさらに狭めて横幅確保 */
     background: rgba(0,0,0,0.4);
     border-radius: 0;
     overflow: hidden;
@@ -107,7 +107,7 @@
     position: relative;
     aspect-ratio: 1 / 1;
   }
-  .cell.filled { box-shadow: inset 0 0 10px #000; }
+  .cell.filled { box-shadow: inset 0 0 8px #000; }
   .color-1 { background: #a0a0b0; }
   .color-2 { background: #66ff99; }
   .color-3 { background: #ff99dd; }
@@ -132,10 +132,10 @@
   }
 
   #hand {
-    margin: 8px 0;
+    margin: 5px 0;
     display: flex;
     justify-content: center;
-    gap: 8px;
+    gap: 6px;
     flex-wrap: wrap;
   }
   .piece {
@@ -147,8 +147,8 @@
   }
   .piece-grid {
     display: inline-grid;
-    gap: 3px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    gap: 2px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
     border-radius: 0;
     background: rgba(60,40,100,0.3);
     padding: 0;
@@ -169,7 +169,7 @@
     align-items: center;
     justify-content: center;
     color: #fff;
-    font-size: 2.2rem;
+    font-size: 2rem;
     font-weight: bold;
     opacity: 0;
     pointer-events: none;
@@ -179,8 +179,8 @@
 
   .restart-btn {
     margin-top: 10px;
-    padding: 10px 25px;
-    font-size: 1.1rem;
+    padding: 8px 20px;
+    font-size: 1rem;
     background: #6644aa;
     color: white;
     border: none;
@@ -192,7 +192,7 @@
 
   #move-counter {
     margin: 5px 0;
-    font-size: 1rem;
+    font-size: 0.9rem;
     color: #aaa;
   }
 </style>
