@@ -63,7 +63,6 @@
 
   .preview { position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5; pointer-events: none; }
 
-  /* オーバーレイ */
   .overlay {
     position: absolute; inset: 0; background: rgba(0,0,0,0.9);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -103,7 +102,7 @@
 </div>
 
 <script>
-/** * 1. 音声生成
+/** * 音声生成 
  */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, type, duration) {
@@ -117,7 +116,8 @@ function playTone(freq, type, duration) {
   osc.start(); osc.stop(audioCtx.currentTime + duration);
 }
 
-/** * 2. ゲーム定数とブロック定義
+/**
+ * ブロック定義と設定 [cite: 2026-01-05]
  */
 const SIZE = 8;
 const BLOCK_DEFINITIONS = [
@@ -144,15 +144,10 @@ let clearedColors = new Set();
 let hand = [];
 let moveCount = 0;
 let gameOver = false;
-
-// ドラッグ位置保持
 let dragOffset = { dx: 0, dy: 0 };
 let activeIdx = -1;
 let dragEl = null;
 
-/**
- * 3. 形状バリエーション生成 (回転・反転) [cite: 2026-01-05]
- */
 function getAllVariants(shape) {
   const variants = [];
   const normalize = (s) => {
@@ -168,37 +163,24 @@ function getAllVariants(shape) {
       const norm = normalize(variant);
       if (!variants.some(v => isSame(v, norm))) variants.push(norm);
     });
-    current = current.map(p => [p[1], -p[0]]); // 90度回転
+    current = current.map(p => [p[1], -p[0]]);
   }
   return variants;
 }
 
-/**
- * 4. 初期化と補充
- */
 function init() {
   board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
   counts = {2:0, 3:0, 4:0}; clearedColors.clear();
   moveCount = 0; gameOver = false;
-  
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   for(let y=0; y<SIZE; y++) {
     for(let x=0; x<SIZE; x++) {
       const cell = document.createElement('div');
-      cell.className = 'cell';
-      cell.dataset.x = x; cell.dataset.y = y;
+      cell.className = 'cell'; cell.dataset.x = x; cell.dataset.y = y;
       boardEl.appendChild(cell);
     }
   }
-
-  // 初期配置
-  for(let i=0; i<10; i++) {
-    let x, y;
-    do { x = Math.floor(Math.random()*SIZE); y = Math.floor(Math.random()*SIZE); } while(board[y][x]);
-    board[y][x] = Math.floor(Math.random()*4) + 1;
-  }
-
   refillHand(); render(); updateUI();
   document.querySelectorAll('.overlay').forEach(el => el.classList.remove('show'));
 }
@@ -209,22 +191,14 @@ function refillHand() {
   const totalFreq = BLOCK_DEFINITIONS.reduce((sum, b) => sum + b.freq, 0);
 
   for(let i=0; i<3; i++) {
-    // 重み付け抽選 [cite: 2026-01-05]
     let rand = Math.random() * totalFreq;
     let base;
-    for (const b of BLOCK_DEFINITIONS) {
-      if (rand < b.freq) { base = b; break; }
-      rand -= b.freq;
-    }
+    for (const b of BLOCK_DEFINITIONS) { if (rand < b.freq) { base = b; break; } rand -= b.freq; }
 
     const variants = getAllVariants(base.shape);
     const selectedShape = variants[Math.floor(Math.random() * variants.length)];
-    
-    // 色決定ロジック
     let availNorma = [2, 3, 4].filter(c => !clearedColors.has(c));
-    let allColors = [1, ...availNorma];
     const targetNormaCount = Math.floor(Math.random() * (base.maxN - base.minN + 1)) + base.minN;
-    
     const colorIndices = Array.from({length: selectedShape.length}, (_, i) => i).sort(() => Math.random() - 0.5);
     const pieceColors = Array(selectedShape.length).fill(1);
     
@@ -274,9 +248,6 @@ function createPieceEl(piece, index) {
   return grid;
 }
 
-/**
- * 5. 移動・配置・クリア判定
- */
 function handleMove(e) {
   if(activeIdx === -1) return;
   const touch = e.touches[0];
@@ -284,7 +255,6 @@ function handleMove(e) {
   const rect = boardEl.getBoundingClientRect();
   const dropX = Math.floor((touch.clientX - rect.left) / (rect.width / SIZE));
   const dropY = Math.floor((touch.clientY - rect.top) / (rect.height / SIZE));
-
   clearPreview();
   if(dropX >= 0 && dropX < SIZE && dropY >= 0 && dropY < SIZE) {
     showPreview(dropY - dragOffset.dy, dropX - dragOffset.dx, hand[activeIdx]);
@@ -311,9 +281,7 @@ function handleEnd(e) {
   clearPreview(); activeIdx = -1; render(); updateUI();
 }
 
-function clearPreview() {
-  document.querySelectorAll('.preview').forEach(p => p.remove());
-}
+function clearPreview() { document.querySelectorAll('.preview').forEach(p => p.remove()); }
 
 function showPreview(by, bx, piece) {
   if(!canPlace(by, bx, piece)) return;
@@ -334,11 +302,11 @@ function canPlace(by, bx, piece) {
   });
 }
 
+// 置く時はカウントしない
 function placePiece(by, bx, piece) {
   if(!canPlace(by, bx, piece)) return false;
   piece.shape.forEach((s, i) => {
     board[by+s[0]][bx+s[1]] = piece.colors[i];
-    if(counts[piece.colors[i]] !== undefined) counts[piece.colors[i]]++;
   });
   return true;
 }
@@ -352,19 +320,33 @@ function checkBoard() {
   
   if(linesY.length > 0 || linesX.length > 0) {
     playTone(880, 'sine', 0.2);
-    linesY.forEach(y => board[y].fill(0));
-    linesX.forEach(x => board.forEach(row => row[x] = 0));
-  }
+    
+    // 消えるマスの色を確認してカウント [cite: 2026-01-05]
+    let cellsToClear = new Set();
+    linesY.forEach(y => { for(let x=0; x<SIZE; x++) cellsToClear.add(`${y},${x}`); });
+    linesX.forEach(x => { for(let y=0; y<SIZE; y++) cellsToClear.add(`${y},${x}`); });
 
-  [2,3,4].forEach(c => {
-    if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
-      clearedColors.add(c);
-      playTone(1320, 'square', 0.3);
-      // クリア済みブロックの無色化 [cite: 2026-01-05]
-      for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(board[y][x] === c) board[y][x] = 1;
-      hand.forEach(p => { if(p) p.colors = p.colors.map(col => col === c ? 1 : col); });
-    }
-  });
+    cellsToClear.forEach(coord => {
+      const [y, x] = coord.split(',').map(Number);
+      const color = board[y][x];
+      if (counts[color] !== undefined && !clearedColors.has(color)) {
+        counts[color]++; // ここで初めてノルマに加算
+      }
+      board[y][x] = 0;
+    });
+
+    // 消去後のノルマ判定 [cite: 2026-01-05]
+    [2,3,4].forEach(c => {
+      if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
+        clearedColors.add(c);
+        playTone(1320, 'square', 0.3);
+        // 盤面に残っている同色を無色化
+        for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(board[y][x] === c) board[y][x] = 1;
+        // 手持ちの同色を無色化
+        hand.forEach(p => { if(p) p.colors = p.colors.map(col => col === c ? 1 : col); });
+      }
+    });
+  }
 
   if(clearedColors.size === 3) {
     gameOver = true;
@@ -379,9 +361,7 @@ function checkBoard() {
 function canPlaceAny() {
   return hand.some(p => {
     if(!p) return false;
-    for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) {
-      if(canPlace(y, x, p)) return true;
-    }
+    for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) { if(canPlace(y, x, p)) return true; }
     return false;
   });
 }
