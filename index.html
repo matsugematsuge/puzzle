@@ -5,7 +5,7 @@
 <title>宝石パズルゲーム</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  /* 全体のスタイル設定 */
+  /* 全体設定 */
   * {
     touch-action: none !important;
     user-select: none;
@@ -19,11 +19,11 @@
     overflow: hidden; display: flex; flex-direction: column; align-items: center;
   }
   #container {
-    width: 100%; max-width: 480px; height: 100%;
-    padding: 10px; display: flex; flex-direction: column;
+    width: 100%; max-width: 480px; padding: 10px;
+    flex: 1; display: flex; flex-direction: column;
   }
 
-  /* 上部ノルマ表示 */
+  /* 上部UI */
   #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
   #norma { display: flex; gap: 8px; }
   .norma-item {
@@ -35,7 +35,7 @@
   .norma-pink  { color: #ff99dd; }
   .norma-yellow{ color: #ffff88; }
 
-  /* 盤面の設定：固定pxを廃止し、レスポンシブに */
+  /* 盤面：レスポンシブ対応 */
   #board-container {
     background: #0a0a1a; border: 4px solid #443366; border-radius: 8px;
     width: 100%; aspect-ratio: 1 / 1; position: relative;
@@ -44,33 +44,25 @@
     display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
     gap: 2px; padding: 2px; width: 100%; height: 100%;
   }
-  .cell {
-    background: rgba(255,255,255,0.05); border-radius: 4px;
-    width: 100%; height: 100%; position: relative;
-  }
+  .cell { background: rgba(255,255,255,0.05); border-radius: 4px; position: relative; }
   
-  /* 宝石の色 */
+  /* 宝石の色：color-1をグレーに固定 */
   .filled { box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-  .color-1 { background: #e67e22; } /* オレンジ */
+  .color-1 { background: #a0a0b0; } /* 無色（グレー） */
   .color-2 { background: #66ff99; } /* 緑 */
   .color-3 { background: #ff99dd; } /* ピンク */
   .color-4 { background: #ffff88; } /* 黄色 */
 
-  /* 手持ちブロックの表示 */
+  /* 手持ちブロック */
   #hand {
-    flex: 1; display: flex; justify-content: space-around; align-items: center;
-    padding: 10px 0; gap: 10px;
+    flex: 1; display: flex; justify-content: space-around; align-items: center; padding: 10px 0;
   }
-  .piece { cursor: grab; transition: transform 0.2s; }
+  .piece { transition: transform 0.1s; }
   .piece-grid { display: grid; gap: 2px; }
-  .piece-cell { width: 25px; height: 25px; border-radius: 3px; }
+  .piece-cell { width: 30px; height: 30px; border-radius: 4px; }
 
-  /* プレビュー（配置イメージ） */
-  .preview {
-    position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5;
-  }
+  .preview { position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5; }
 
-  /* ゲーム終了画面 */
   .overlay {
     position: absolute; inset: 0; background: rgba(0,0,0,0.8);
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -90,10 +82,9 @@
     <div id="norma">
       <div class="norma-item norma-green">🟩 <span id="c2">0/5</span></div>
       <div class="norma-item norma-pink">🟥 <span id="c3">0/5</span></div>
-      <div class="norma-item norma-yellow">🟨 <span id="c4">0/5</span></div>
+      <div class="norma-item norma-yellow">🟨 <span id="c4">0/10</span></div>
     </div>
-    <div style="font-size: 0.8rem; opacity: 0.7;">操作: <span id="moveCount">0</span></div>
-    <button id="resetBtn" style="background:none; border:none; color:white; font-size:1.2rem;">↻</button>
+    <button id="resetBtn" style="background:none; border:none; color:white; font-size:1.5rem;">↻</button>
   </div>
 
   <div id="board-container">
@@ -115,26 +106,20 @@ let counts = {2:0, 3:0, 4:0};
 let normaTargets = {2:5, 3:5, 4:10};
 let clearedColors = new Set();
 let hand = [];
-let moveCount = 0;
 let gameOver = false;
 
 const SHAPES = [
-  [[0,0],[1,0],[2,0],[2,1]], // L
-  [[0,0],[0,1],[0,2],[1,2]], // 逆L
-  [[0,0],[0,1]],             // 2マス
-  [[0,0],[0,1],[0,2],[0,3]], // 4マス棒
-  [[0,0],[0,1],[1,0],[1,1]], // 正方形
-  [[0,0],[0,1],[0,2],[1,1]]  // T
+  [[0,0],[1,0],[2,0],[2,1]], [[0,0],[0,1],[0,2],[1,2]],
+  [[0,0],[0,1]], [[0,0],[0,1],[0,2],[0,3]],
+  [[0,0],[0,1],[1,0],[1,1]], [[0,0],[0,1],[0,2],[1,1]]
 ];
 
 function init() {
   board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
   counts = {2:0, 3:0, 4:0};
   clearedColors.clear();
-  moveCount = 0;
   gameOver = false;
   
-  // 盤面初期化
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   for(let y=0; y<SIZE; y++) {
@@ -165,14 +150,19 @@ function refillHand() {
   hand = [];
   for(let i=0; i<3; i++) {
     const shape = SHAPES[Math.floor(Math.random()*SHAPES.length)];
-    // クリアした色は出現しない
-    let colors = [1,2,3,4].filter(c => !clearedColors.has(c));
-    const pieceColors = shape.map(() => colors[Math.floor(Math.random()*colors.length)]);
+    let availColors = [1,2,3,4].filter(c => !clearedColors.has(c));
+    if (availColors.length === 0) availColors = [1];
+    
+    // 出現頻度の調整：1つは必ずノルマ色を含める
+    const normaAvail = availColors.filter(c => [2,3,4].includes(c));
+    const pieceColors = shape.map((_, idx) => {
+      if (idx === 0 && normaAvail.length > 0) return normaAvail[Math.floor(Math.random()*normaAvail.length)];
+      return availColors[Math.floor(Math.random()*availColors.length)];
+    });
     
     const pieceObj = { shape, colors: pieceColors };
-    const pieceEl = createPieceEl(pieceObj, i);
     hand.push(pieceObj);
-    handEl.appendChild(pieceEl);
+    handEl.appendChild(createPieceEl(pieceObj, i));
   }
 }
 
@@ -197,30 +187,29 @@ function createPieceEl(piece, index) {
   }
   grid.appendChild(inner);
 
-  // スマホ用ドラッグ操作
-  grid.addEventListener('touchstart', (e) => handleStart(e, index, grid));
+  // ドラッグ操作（浮き上がり挙動を削除）
+  grid.addEventListener('touchstart', (e) => {
+    if(gameOver) return;
+    activeIdx = index;
+    dragEl = grid;
+    // 浮き上がりなし、拡大のみ
+    grid.style.transform = 'scale(1.1)';
+  });
   grid.addEventListener('touchmove', handleMove);
   grid.addEventListener('touchend', handleEnd);
   return grid;
 }
 
-let activeIdx = -1;
-let dragEl = null;
-let lastTarget = null;
-
-function handleStart(e, idx, el) {
-  if(gameOver) return;
-  activeIdx = idx;
-  dragEl = el;
-  el.style.transform = 'scale(1.2) translateY(-50px)'; // 指で見えるように上にずらす
-}
+let activeIdx = -1, dragEl = null, lastTarget = null;
 
 function handleMove(e) {
   if(activeIdx === -1) return;
   const touch = e.touches[0];
   const boardRect = document.getElementById('board').getBoundingClientRect();
+  
+  // 指の位置から盤面のマスを計算
   const x = Math.floor((touch.clientX - boardRect.left) / (boardRect.width / SIZE));
-  const y = Math.floor((touch.clientY - boardRect.top - 50) / (boardRect.height / SIZE)); // ずれを考慮
+  const y = Math.floor((touch.clientY - boardRect.top) / (boardRect.height / SIZE));
 
   document.querySelectorAll('.preview').forEach(p => p.remove());
   if(x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
@@ -233,14 +222,11 @@ function handleMove(e) {
 
 function handleEnd() {
   if(activeIdx === -1) return;
-  if(lastTarget) {
-    if(placePiece(lastTarget.y, lastTarget.x, hand[activeIdx])) {
-      hand[activeIdx] = null;
-      dragEl.style.visibility = 'hidden';
-      moveCount++;
-      if(hand.every(h => h === null)) refillHand();
-      checkClear();
-    }
+  if(lastTarget && placePiece(lastTarget.y, lastTarget.x, hand[activeIdx])) {
+    hand[activeIdx] = null;
+    dragEl.style.visibility = 'hidden';
+    if(hand.every(h => h === null)) refillHand();
+    checkBoard();
   }
   if(dragEl) dragEl.style.transform = '';
   document.querySelectorAll('.preview').forEach(p => p.remove());
@@ -278,26 +264,22 @@ function placePiece(by, bx, piece) {
   return true;
 }
 
-function checkClear() {
+function checkBoard() {
   let linesY = [], linesX = [];
   for(let i=0; i<SIZE; i++) {
     if(board[i].every(v => v > 0)) linesY.push(i);
     if(board.every(row => row[i] > 0)) linesX.push(i);
   }
-  
   linesY.forEach(y => board[y].fill(0));
   linesX.forEach(x => board.forEach(row => row[x] = 0));
 
-  // ノルマチェックと色変換
+  // ノルマクリア後の色変換 [cite: 2026-01-05]
   [2,3,4].forEach(c => {
     if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
       clearedColors.add(c);
-      // 盤面のクリアされた色をオレンジ（color-1）に [cite: 2026-01-05]
+      // 盤面と手持ちのクリア色を無色(color-1)に変換 [cite: 2026-01-05]
       for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(board[y][x] === c) board[y][x] = 1;
-      // 手持ちのクリアされた色も変換 [cite: 2026-01-05]
-      hand.forEach(p => {
-        if(p) p.colors = p.colors.map(col => col === c ? 1 : col);
-      });
+      hand.forEach(p => { if(p) p.colors = p.colors.map(col => col === c ? 1 : col); });
     }
   });
 
@@ -306,17 +288,15 @@ function checkClear() {
 
 function render() {
   document.querySelectorAll('.cell').forEach(el => {
-    const x = el.dataset.x, y = el.dataset.y;
-    const v = board[y][x];
+    const v = board[el.dataset.y][el.dataset.x];
     el.className = 'cell' + (v ? ` color-${v} filled` : '');
   });
 }
 
 function updateUI() {
-  document.getElementById('c2').innerText = `${counts[2]}/${normaTargets[2]}`;
-  document.getElementById('c3').innerText = `${counts[3]}/${normaTargets[3]}`;
-  document.getElementById('c4').innerText = `${counts[4]}/${normaTargets[4]}`;
-  document.getElementById('moveCount').innerText = moveCount;
+  [2,3,4].forEach(c => {
+    document.getElementById(`c${c}`).innerText = `${counts[c]}/${normaTargets[c]}`;
+  });
 }
 
 init();
