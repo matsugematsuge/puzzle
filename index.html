@@ -5,7 +5,7 @@
 <title>宝石パズルゲーム</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  /* 全体設定 */
+  /* 基本スタイル */
   * {
     touch-action: none !important;
     user-select: none;
@@ -35,7 +35,7 @@
   .norma-pink  { color: #ff99dd; }
   .norma-yellow{ color: #ffff88; }
 
-  /* 盤面：レスポンシブ設計 */
+  /* 盤面 */
   #board-container {
     background: #0a0a1a; border: 4px solid #443366; border-radius: 8px;
     width: 100%; aspect-ratio: 1 / 1; position: relative;
@@ -59,7 +59,7 @@
   }
   .piece { transition: transform 0.1s; cursor: grab; }
   .piece-grid { display: grid; gap: 2px; }
-  .piece-cell { width: 30px; height: 30px; border-radius: 4px; }
+  .piece-cell { width: 28px; height: 28px; border-radius: 4px; }
 
   .preview { position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5; pointer-events: none; }
 
@@ -72,7 +72,7 @@
   .overlay.show { opacity: 1; pointer-events: all; }
   .restart-btn {
     margin-top: 15px; padding: 12px 30px; background: #6644aa; color: white;
-    border: none; border-radius: 25px; font-weight: bold;
+    border: none; border-radius: 25px; font-weight: bold; cursor: pointer;
   }
 </style>
 </head>
@@ -94,7 +94,7 @@
     <div class="overlay" id="gameover">GAME OVER</div>
     <div class="overlay" id="clearScreen">
       <h2 style="margin:0; color:#ffff88;">🎉 CLEAR! 🎉</h2>
-      <div id="clear-stats" style="margin-top:10px; font-size:1.2rem;"></div>
+      <div id="clear-stats" style="margin-top:10px; font-size:1.2rem; color:#ff99dd;"></div>
       <button class="restart-btn" id="restartBtn">もう一度あそぶ</button>
     </div>
   </div>
@@ -103,7 +103,8 @@
 </div>
 
 <script>
-// 音声生成
+/** * 1. 音声生成
+ */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, type, duration) {
   const osc = audioCtx.createOscillator();
@@ -116,7 +117,26 @@ function playTone(freq, type, duration) {
   osc.start(); osc.stop(audioCtx.currentTime + duration);
 }
 
+/** * 2. ゲーム定数とブロック定義
+ */
 const SIZE = 8;
+const BLOCK_DEFINITIONS = [
+  { name: "ナチュラル", freq: 8, shape: [[0,0], [1,0], [1,1], [2,1]], minN: 1, maxN: 2 },
+  { name: "T字", freq: 8, shape: [[0,1], [1,0], [1,1], [1,2]], minN: 1, maxN: 2 },
+  { name: "1マス", freq: 6, shape: [[0,0]], minN: 0, maxN: 1 },
+  { name: "直線2マス", freq: 5, shape: [[0,0], [0,1]], minN: 1, maxN: 2 },
+  { name: "直線3マス", freq: 7, shape: [[0,0], [0,1], [0,2]], minN: 1, maxN: 2 },
+  { name: "直線4マス", freq: 5, shape: [[0,0], [0,1], [0,2], [0,3]], minN: 1, maxN: 3 },
+  { name: "直線5マス", freq: 4, shape: [[0,0], [0,1], [0,2], [0,3], [0,4]], minN: 1, maxN: 3 },
+  { name: "L字_小", freq: 5, shape: [[0,0], [1,0], [1,1]], minN: 1, maxN: 2 },
+  { name: "L字_中", freq: 8, shape: [[0,0], [1,0], [2,0], [2,1]], minN: 1, maxN: 2 },
+  { name: "L字_大", freq: 5, shape: [[0,0], [1,0], [2,0], [3,0], [3,1], [3,2], [3,3]], minN: 1, maxN: 4 },
+  { name: "階段_小", freq: 7, shape: [[0,0], [1,1]], minN: 1, maxN: 2 },
+  { name: "階段_大", freq: 6, shape: [[0,0], [1,1], [2,2]], minN: 1, maxN: 2 },
+  { name: "四角_小", freq: 6, shape: [[0,0], [0,1], [1,0], [1,1]], minN: 1, maxN: 2 },
+  { name: "四角_大", freq: 5, shape: [[0,0], [0,1], [0,2], [1,0], [1,1], [1,2]], minN: 1, maxN: 4 }
+];
+
 let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
 let counts = {2:0, 3:0, 4:0};
 let normaTargets = {2:5, 3:5, 4:10};
@@ -125,18 +145,37 @@ let hand = [];
 let moveCount = 0;
 let gameOver = false;
 
-// ドラッグ位置保持用
+// ドラッグ位置保持
 let dragOffset = { dx: 0, dy: 0 };
 let activeIdx = -1;
 let dragEl = null;
 
-const SHAPES = [
-  [[0,0],[1,0],[2,0],[2,1]], [[0,0],[0,1],[0,2],[1,2]],
-  [[0,0],[0,1]], [[0,0],[0,1],[0,2],[0,3]],
-  [[0,0],[0,1],[1,0],[1,1]], [[0,0],[0,1],[0,2],[1,1]],
-  [[1,0],[1,1],[1,2],[0,1]], [[0,0],[1,0],[2,0],[1,1]]
-];
+/**
+ * 3. 形状バリエーション生成 (回転・反転) [cite: 2026-01-05]
+ */
+function getAllVariants(shape) {
+  const variants = [];
+  const normalize = (s) => {
+    const minY = Math.min(...s.map(p => p[0]));
+    const minX = Math.min(...s.map(p => p[1]));
+    return s.map(p => [p[0] - minY, p[1] - minX]).sort((a,b) => a[0]-b[0] || a[1]-b[1]);
+  };
+  const isSame = (s1, s2) => JSON.stringify(s1) === JSON.stringify(s2);
 
+  let current = shape;
+  for (let r = 0; r < 4; r++) {
+    [current, current.map(p => [p[0], -p[1]]), current.map(p => [-p[0], p[1]])].forEach(variant => {
+      const norm = normalize(variant);
+      if (!variants.some(v => isSame(v, norm))) variants.push(norm);
+    });
+    current = current.map(p => [p[1], -p[0]]); // 90度回転
+  }
+  return variants;
+}
+
+/**
+ * 4. 初期化と補充
+ */
 function init() {
   board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
   counts = {2:0, 3:0, 4:0}; clearedColors.clear();
@@ -153,6 +192,7 @@ function init() {
     }
   }
 
+  // 初期配置
   for(let i=0; i<10; i++) {
     let x, y;
     do { x = Math.floor(Math.random()*SIZE); y = Math.floor(Math.random()*SIZE); } while(board[y][x]);
@@ -166,18 +206,33 @@ function init() {
 function refillHand() {
   const handEl = document.getElementById('hand');
   handEl.innerHTML = ''; hand = [];
+  const totalFreq = BLOCK_DEFINITIONS.reduce((sum, b) => sum + b.freq, 0);
+
   for(let i=0; i<3; i++) {
-    const shape = SHAPES[Math.floor(Math.random()*SHAPES.length)];
-    let availColors = [1,2,3,4].filter(c => !clearedColors.has(c));
-    if (availColors.length === 0) availColors = [1];
+    // 重み付け抽選 [cite: 2026-01-05]
+    let rand = Math.random() * totalFreq;
+    let base;
+    for (const b of BLOCK_DEFINITIONS) {
+      if (rand < b.freq) { base = b; break; }
+      rand -= b.freq;
+    }
+
+    const variants = getAllVariants(base.shape);
+    const selectedShape = variants[Math.floor(Math.random() * variants.length)];
     
-    const normaAvail = availColors.filter(c => [2,3,4].includes(c));
-    const pieceColors = shape.map((_, idx) => {
-      if (idx === 0 && normaAvail.length > 0) return normaAvail[Math.floor(Math.random()*normaAvail.length)];
-      return availColors[Math.floor(Math.random()*availColors.length)];
-    });
+    // 色決定ロジック
+    let availNorma = [2, 3, 4].filter(c => !clearedColors.has(c));
+    let allColors = [1, ...availNorma];
+    const targetNormaCount = Math.floor(Math.random() * (base.maxN - base.minN + 1)) + base.minN;
     
-    const pieceObj = { shape, colors: pieceColors };
+    const colorIndices = Array.from({length: selectedShape.length}, (_, i) => i).sort(() => Math.random() - 0.5);
+    const pieceColors = Array(selectedShape.length).fill(1);
+    
+    for (let n = 0; n < targetNormaCount && n < selectedShape.length; n++) {
+      pieceColors[colorIndices[n]] = availNorma.length > 0 ? availNorma[Math.floor(Math.random() * availNorma.length)] : 1;
+    }
+
+    const pieceObj = { shape: selectedShape, colors: pieceColors };
     hand.push(pieceObj);
     handEl.appendChild(createPieceEl(pieceObj, i));
   }
@@ -203,47 +258,36 @@ function createPieceEl(piece, index) {
   }
   grid.appendChild(inner);
 
-  // ドラッグ開始ロジック
   grid.addEventListener('touchstart', (e) => {
     if(gameOver) return;
     if(audioCtx.state === 'suspended') audioCtx.resume();
     const touch = e.touches[0];
     const rect = grid.getBoundingClientRect();
-    
-    // どのセルを触ったか計算してオフセットを保持
-    const relX = touch.clientX - rect.left;
-    const relY = touch.clientY - rect.top;
     const cellSize = rect.width / w;
-    dragOffset.dx = Math.floor(relX / cellSize);
-    dragOffset.dy = Math.floor(relY / cellSize);
-
-    activeIdx = index;
-    dragEl = grid;
+    dragOffset.dx = Math.floor((touch.clientX - rect.left) / cellSize);
+    dragOffset.dy = Math.floor((touch.clientY - rect.top) / cellSize);
+    activeIdx = index; dragEl = grid;
     grid.style.transform = 'scale(1.1)';
   });
-
   grid.addEventListener('touchmove', handleMove);
   grid.addEventListener('touchend', handleEnd);
   return grid;
 }
 
+/**
+ * 5. 移動・配置・クリア判定
+ */
 function handleMove(e) {
   if(activeIdx === -1) return;
   const touch = e.touches[0];
   const boardEl = document.getElementById('board');
   const rect = boardEl.getBoundingClientRect();
-  
-  // 指の位置から盤面上の座標を特定
   const dropX = Math.floor((touch.clientX - rect.left) / (rect.width / SIZE));
   const dropY = Math.floor((touch.clientY - rect.top) / (rect.height / SIZE));
 
-  // オフセットを引いて左上基準の座標(baseX, baseY)を算出
-  const baseX = dropX - dragOffset.dx;
-  const baseY = dropY - dragOffset.dy;
-
   clearPreview();
   if(dropX >= 0 && dropX < SIZE && dropY >= 0 && dropY < SIZE) {
-    showPreview(baseY, baseX, hand[activeIdx]);
+    showPreview(dropY - dragOffset.dy, dropX - dragOffset.dx, hand[activeIdx]);
   }
 }
 
@@ -254,11 +298,8 @@ function handleEnd(e) {
   const rect = boardEl.getBoundingClientRect();
   const dropX = Math.floor((touch.clientX - rect.left) / (rect.width / SIZE));
   const dropY = Math.floor((touch.clientY - rect.top) / (rect.height / SIZE));
-  
-  const baseX = dropX - dragOffset.dx;
-  const baseY = dropY - dragOffset.dy;
 
-  if(placePiece(baseY, baseX, hand[activeIdx])) {
+  if(placePiece(dropY - dragOffset.dy, dropX - dragOffset.dx, hand[activeIdx])) {
     playTone(660, 'sine', 0.1);
     hand[activeIdx] = null;
     dragEl.style.visibility = 'hidden';
@@ -266,10 +307,8 @@ function handleEnd(e) {
     if(hand.every(h => h === null)) refillHand();
     checkBoard();
   }
-
   if(dragEl) dragEl.style.transform = '';
-  clearPreview();
-  activeIdx = -1; render(); updateUI();
+  clearPreview(); activeIdx = -1; render(); updateUI();
 }
 
 function clearPreview() {
@@ -321,6 +360,7 @@ function checkBoard() {
     if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
       clearedColors.add(c);
       playTone(1320, 'square', 0.3);
+      // クリア済みブロックの無色化 [cite: 2026-01-05]
       for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(board[y][x] === c) board[y][x] = 1;
       hand.forEach(p => { if(p) p.colors = p.colors.map(col => col === c ? 1 : col); });
     }
@@ -330,7 +370,20 @@ function checkBoard() {
     gameOver = true;
     document.getElementById('clear-stats').innerText = `クリア操作回数: ${moveCount}回`;
     document.getElementById('clearScreen').classList.add('show');
+  } else if(hand.length === 3 && !canPlaceAny()) {
+    gameOver = true;
+    document.getElementById('gameover').classList.add('show');
   }
+}
+
+function canPlaceAny() {
+  return hand.some(p => {
+    if(!p) return false;
+    for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) {
+      if(canPlace(y, x, p)) return true;
+    }
+    return false;
+  });
 }
 
 function render() {
