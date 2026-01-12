@@ -5,196 +5,81 @@
 <title>宝石パズルゲーム</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
+  /* 全体のスタイル設定 */
   * {
     touch-action: none !important;
     user-select: none;
     -webkit-user-select: none;
-    -webkit-touch-callout: none;
     box-sizing: border-box;
   }
   body {
-    margin: 0;
-    padding: 0;
-    height: 100dvh;
+    margin: 0; padding: 0; height: 100dvh;
     background: linear-gradient(135deg, #0f001a, #1a0033);
-    color: #eee;
-    font-family: system-ui, sans-serif;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    color: #eee; font-family: system-ui, sans-serif;
+    overflow: hidden; display: flex; flex-direction: column; align-items: center;
   }
   #container {
-    width: 100%;
-    max-width: 480px;
-    padding: 5px 5px 0;
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
+    width: 100%; max-width: 480px; height: 100%;
+    padding: 10px; display: flex; flex-direction: column;
   }
-  #top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 5px;
-  }
-  #norma {
-    display: flex;
-    gap: 6px;
-  }
+
+  /* 上部ノルマ表示 */
+  #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  #norma { display: flex; gap: 8px; }
   .norma-item {
-    background: rgba(40,20,80,0.7);
-    border: 2px solid #6644aa;
-    border-radius: 10px;
-    padding: 5px 8px;
-    text-align: center;
-    min-width: 60px;
-    height: 35px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.75rem;
-    font-weight: bold;
+    background: rgba(40,20,80,0.7); border: 2px solid #6644aa; border-radius: 12px;
+    padding: 4px 10px; text-align: center; min-width: 70px;
+    font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 4px;
   }
-  .norma-green { color: #66ff99; text-shadow: 0 0 5px #66ff99; }
-  .norma-pink  { color: #ff99dd; text-shadow: 0 0 5px #ff99dd; }
-  .norma-yellow{ color: #ffff88; text-shadow: 0 0 5px #ffff88; }
+  .norma-green { color: #66ff99; }
+  .norma-pink  { color: #ff99dd; }
+  .norma-yellow{ color: #ffff88; }
 
-  #reset-btn {
-    background: rgba(40,20,80,0.7);
-    border: 2px solid #6644aa;
-    border-radius: 10px;
-    width: 35px;
-    height: 35px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    color: #aaa;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-  #reset-btn:hover { background: rgba(100,50,200,0.5); }
-
+  /* 盤面の設定：固定pxを廃止し、レスポンシブに */
   #board-container {
-    background: #0a0a1a;
-    border: 6px solid #443366;
-    border-radius: 0;
-    padding: 4px;
-    box-shadow: 0 5px 20px rgba(0,0,0,0.6);
-    position: relative;
-    flex: 1;
-    max-height: 58vh;
-    aspect-ratio: 1 / 1;
-    width: 100%;
+    background: #0a0a1a; border: 4px solid #443366; border-radius: 8px;
+    width: 100%; aspect-ratio: 1 / 1; position: relative;
   }
   #board {
-    height: 100%;
-    width: 100%;
-    display: grid;
-    grid-template-columns: repeat(8, 46px); /* 46px固定 */
-    grid-template-rows: repeat(8, 46px); /* 46px固定 */
-    gap: 2px;
-    background: rgba(0,0,0,0.4);
-    border-radius: 0;
-    overflow: hidden;
-    margin: 0 auto;
+    display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
+    gap: 2px; padding: 2px; width: 100%; height: 100%;
   }
   .cell {
-    background: #1a1a2e;
-    border-radius: 0;
-    transition: all 0.4s ease;
-    position: relative;
-    width: 46px;
-    height: 46px;
+    background: rgba(255,255,255,0.05); border-radius: 4px;
+    width: 100%; height: 100%; position: relative;
   }
-  .cell.filled { box-shadow: inset 0 0 8px #000; }
-  .color-1 { background: #a0a0b0; }
-  .color-2 { background: #66ff99; }
-  .color-3 { background: #ff99dd; }
-  .color-4 { background: #ffff88; }
+  
+  /* 宝石の色 */
+  .filled { box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+  .color-1 { background: #e67e22; } /* オレンジ */
+  .color-2 { background: #66ff99; } /* 緑 */
+  .color-3 { background: #ff99dd; } /* ピンク */
+  .color-4 { background: #ffff88; } /* 黄色 */
 
-  .clearing {
-    animation: clearAnim 0.6s ease forwards;
-  }
-  @keyframes clearAnim {
-    0%   { opacity: 1; transform: scale(1); }
-    50%  { opacity: 0.6; transform: scale(1.15); }
-    100% { opacity: 0; transform: scale(0.6); }
-  }
-
-  .preview {
-    position: absolute;
-    inset: 0;
-    border-radius: 0;
-    opacity: 0.35;
-    pointer-events: none;
-    z-index: 10;
-  }
-
+  /* 手持ちブロックの表示 */
   #hand {
-    margin: 5px 0;
-    display: flex;
-    justify-content: center;
-    gap: 6px;
-    flex-wrap: wrap;
+    flex: 1; display: flex; justify-content: space-around; align-items: center;
+    padding: 10px 0; gap: 10px;
   }
-  .piece {
-    padding: 0;
-    border: none;
-    background: transparent;
-    cursor: grab;
-    touch-action: none;
-  }
-  .piece-grid {
-    display: inline-grid;
-    gap: 2px;
-    box-shadow: 0 3px 10px rgba(0,0,0,0.4);
-    border-radius: 0;
-    background: rgba(60,40,100,0.3);
-    padding: 0;
-  }
-  .piece-cell {
-    width: 46px;
-    height: 46px;
-    border-radius: 0;
+  .piece { cursor: grab; transition: transform 0.2s; }
+  .piece-grid { display: grid; gap: 2px; }
+  .piece-cell { width: 25px; height: 25px; border-radius: 3px; }
+
+  /* プレビュー（配置イメージ） */
+  .preview {
+    position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5;
   }
 
-  .gameover, .clear-screen {
-    position: absolute;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 2rem;
-    font-weight: bold;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.6s;
+  /* ゲーム終了画面 */
+  .overlay {
+    position: absolute; inset: 0; background: rgba(0,0,0,0.8);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none; transition: 0.5s; z-index: 100;
   }
-  .gameover.show, .clear-screen.show { opacity: 1; pointer-events: all; }
-
+  .overlay.show { opacity: 1; pointer-events: all; }
   .restart-btn {
-    margin-top: 10px;
-    padding: 8px 20px;
-    font-size: 1rem;
-    background: #6644aa;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.3s;
-  }
-  .restart-btn:hover { background: #8866cc; }
-
-  #move-counter {
-    margin: 5px 0;
-    font-size: 0.9rem;
-    color: #aaa;
+    margin-top: 15px; padding: 10px 25px; background: #6644aa; color: white;
+    border: none; border-radius: 20px; font-weight: bold;
   }
 </style>
 </head>
@@ -202,21 +87,20 @@
 
 <div id="container">
   <div id="top-bar">
-    <div id="move-counter">操作回数: <span id="moveCount">0</span></div>
     <div id="norma">
-      <div class="norma-item norma-green">♥ <span id="c2">0/5</span></div>
-      <div class="norma-item norma-pink">♥ <span id="c3">0/5</span></div>
-      <div class="norma-item norma-yellow">♥ <span id="c4">0/5</span></div>
+      <div class="norma-item norma-green">🟩 <span id="c2">0/5</span></div>
+      <div class="norma-item norma-pink">🟥 <span id="c3">0/5</span></div>
+      <div class="norma-item norma-yellow">🟨 <span id="c4">0/5</span></div>
     </div>
-    <button id="resetBtn" class="restart-btn">↻</button>
+    <div style="font-size: 0.8rem; opacity: 0.7;">操作: <span id="moveCount">0</span></div>
+    <button id="resetBtn" style="background:none; border:none; color:white; font-size:1.2rem;">↻</button>
   </div>
 
   <div id="board-container">
     <div id="board"></div>
-    <div class="gameover" id="gameover">GAME OVER<br><small>タップで再スタート</small></div>
-    <div class="clear-screen" id="clearScreen">
-      クリア！<br>
-      <div id="clearMoves"></div>
+    <div class="overlay" id="gameover">GAME OVER</div>
+    <div class="overlay" id="clearScreen">
+      🎉 CLEAR! 🎉
       <button class="restart-btn" id="restartBtn">もう一度あそぶ</button>
     </div>
   </div>
@@ -226,492 +110,218 @@
 
 <script>
 const SIZE = 8;
-const TARGET = 5;
-const NORMA_COLORS = [2,3,4];
-
-// ノルマをランダムで決定（2色が5個、1色が10個）
-let normaTargets = {};
-function setRandomNorma() {
-  const colors = [2,3,4];
-  const perm = colors.sort(() => Math.random() - 0.5); // ランダムシャッフル
-  normaTargets = {
-    [perm[0]]: 5,
-    [perm[1]]: 5,
-    [perm[2]]: 10
-  };
-  updateNormaDisplay();
-}
-
-function updateNormaDisplay() {
-  document.getElementById('c2').textContent = `0/${normaTargets[2] || 5}`;
-  document.getElementById('c3').textContent = `0/${normaTargets[3] || 5}`;
-  document.getElementById('c4').textContent = `0/${normaTargets[4] || 5}`;
-}
+let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+let counts = {2:0, 3:0, 4:0};
+let normaTargets = {2:5, 3:5, 4:10};
+let clearedColors = new Set();
+let hand = [];
+let moveCount = 0;
+let gameOver = false;
 
 const SHAPES = [
-  [[0,0],[1,0],[2,0],[2,1]],
-  [[0,0],[0,1],[0,2],[1,2]],
-  [[0,0],[0,1]],
-  [[0,0],[0,1],[0,2],[0,3]],
-  [[0,0],[0,1],[1,0],[1,1]],
-  [[0,0],[0,1],[0,2],[1,1]],
-  [[1,0],[1,1],[1,2],[0,1]],
-  [[0,0],[1,0],[2,0],[1,1]]
+  [[0,0],[1,0],[2,0],[2,1]], // L
+  [[0,0],[0,1],[0,2],[1,2]], // 逆L
+  [[0,0],[0,1]],             // 2マス
+  [[0,0],[0,1],[0,2],[0,3]], // 4マス棒
+  [[0,0],[0,1],[1,0],[1,1]], // 正方形
+  [[0,0],[0,1],[0,2],[1,1]]  // T
 ];
 
-let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
-let hand = [];
-let cleared = new Set();
-let counts = {2:0, 3:0, 4:0};
-let gameOver = false;
-let currentDragPiece = null;
-let currentPreviewCells = [];
-let dragOffset = { dx: 0, dy: 0 };
-let moveCount = 0;
-let isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-const boardEl = document.getElementById('board');
-const handEl = document.getElementById('hand');
-const gameoverEl = document.getElementById('gameover');
-const clearScreen = document.getElementById('clearScreen');
-const clearMoves = document.getElementById('clearMoves');
-const restartBtn = document.getElementById('restartBtn');
-const resetBtn = document.getElementById('resetBtn');
-const moveCountEl = document.getElementById('moveCount');
-
 function init() {
-  setRandomNorma(); // ノルマをランダム決定
-
-  boardEl.innerHTML = '';
   board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
-
-  for(let y = 0; y < SIZE; y++) {
-    for(let x = 0; x < SIZE; x++) {
-      const c = document.createElement('div');
-      c.className = 'cell';
-      c.dataset.x = x;
-      c.dataset.y = y;
-      boardEl.appendChild(c);
+  counts = {2:0, 3:0, 4:0};
+  clearedColors.clear();
+  moveCount = 0;
+  gameOver = false;
+  
+  // 盤面初期化
+  const boardEl = document.getElementById('board');
+  boardEl.innerHTML = '';
+  for(let y=0; y<SIZE; y++) {
+    for(let x=0; x<SIZE; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.x = x; cell.dataset.y = y;
+      boardEl.appendChild(cell);
     }
   }
 
-  for(let i = 0; i < 10; i++) {
+  // 10個の初期配置
+  for(let i=0; i<10; i++) {
     let x, y;
-    do {
-      x = Math.floor(Math.random() * SIZE);
-      y = Math.floor(Math.random() * SIZE);
-    } while(board[y][x]);
-    board[y][x] = Math.floor(Math.random() * 4) + 1;
+    do { x = Math.floor(Math.random()*SIZE); y = Math.floor(Math.random()*SIZE); } while(board[y][x]);
+    board[y][x] = Math.floor(Math.random()*4) + 1;
   }
 
-  renderBoard();
-  hand = [];
-  handEl.innerHTML = '';
   refillHand();
-  cleared.clear();
-  counts = {2:0, 3:0, 4:0};
-  moveCount = 0;
-  updateMoveCount();
-  updateNorma();
-  gameOver = false;
-  gameoverEl.classList.remove('show');
-  clearScreen.classList.remove('show');
+  render();
+  updateUI();
+  document.querySelectorAll('.overlay').forEach(el => el.classList.remove('show'));
 }
 
-function updateMoveCount() {
-  moveCountEl.textContent = moveCount;
+function refillHand() {
+  const handEl = document.getElementById('hand');
+  handEl.innerHTML = '';
+  hand = [];
+  for(let i=0; i<3; i++) {
+    const shape = SHAPES[Math.floor(Math.random()*SHAPES.length)];
+    // クリアした色は出現しない
+    let colors = [1,2,3,4].filter(c => !clearedColors.has(c));
+    const pieceColors = shape.map(() => colors[Math.floor(Math.random()*colors.length)]);
+    
+    const pieceObj = { shape, colors: pieceColors };
+    const pieceEl = createPieceEl(pieceObj, i);
+    hand.push(pieceObj);
+    handEl.appendChild(pieceEl);
+  }
 }
 
-function renderBoard() {
-  document.querySelectorAll('#board .cell').forEach(el => {
-    const x = +el.dataset.x, y = +el.dataset.y;
+function createPieceEl(piece, index) {
+  const grid = document.createElement('div');
+  grid.className = 'piece';
+  const w = Math.max(...piece.shape.map(s => s[1])) + 1;
+  const h = Math.max(...piece.shape.map(s => s[0])) + 1;
+  
+  const inner = document.createElement('div');
+  inner.className = 'piece-grid';
+  inner.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
+  
+  for(let y=0; y<h; y++) {
+    for(let x=0; x<w; x++) {
+      const cell = document.createElement('div');
+      cell.className = 'piece-cell';
+      const colorIdx = piece.shape.findIndex(s => s[0] === y && s[1] === x);
+      if(colorIdx !== -1) cell.classList.add(`color-${piece.colors[colorIdx]}`, 'filled');
+      inner.appendChild(cell);
+    }
+  }
+  grid.appendChild(inner);
+
+  // スマホ用ドラッグ操作
+  grid.addEventListener('touchstart', (e) => handleStart(e, index, grid));
+  grid.addEventListener('touchmove', handleMove);
+  grid.addEventListener('touchend', handleEnd);
+  return grid;
+}
+
+let activeIdx = -1;
+let dragEl = null;
+let lastTarget = null;
+
+function handleStart(e, idx, el) {
+  if(gameOver) return;
+  activeIdx = idx;
+  dragEl = el;
+  el.style.transform = 'scale(1.2) translateY(-50px)'; // 指で見えるように上にずらす
+}
+
+function handleMove(e) {
+  if(activeIdx === -1) return;
+  const touch = e.touches[0];
+  const boardRect = document.getElementById('board').getBoundingClientRect();
+  const x = Math.floor((touch.clientX - boardRect.left) / (boardRect.width / SIZE));
+  const y = Math.floor((touch.clientY - boardRect.top - 50) / (boardRect.height / SIZE)); // ずれを考慮
+
+  document.querySelectorAll('.preview').forEach(p => p.remove());
+  if(x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
+    showPreview(y, x, hand[activeIdx]);
+    lastTarget = {x, y};
+  } else {
+    lastTarget = null;
+  }
+}
+
+function handleEnd() {
+  if(activeIdx === -1) return;
+  if(lastTarget) {
+    if(placePiece(lastTarget.y, lastTarget.x, hand[activeIdx])) {
+      hand[activeIdx] = null;
+      dragEl.style.visibility = 'hidden';
+      moveCount++;
+      if(hand.every(h => h === null)) refillHand();
+      checkClear();
+    }
+  }
+  if(dragEl) dragEl.style.transform = '';
+  document.querySelectorAll('.preview').forEach(p => p.remove());
+  activeIdx = -1;
+  render();
+  updateUI();
+}
+
+function showPreview(by, bx, piece) {
+  if(!canPlace(by, bx, piece)) return;
+  piece.shape.forEach((s, i) => {
+    const cell = document.querySelector(`.cell[data-x="${bx+s[1]}"][data-y="${by+s[0]}"]`);
+    if(cell) {
+      const p = document.createElement('div');
+      p.className = `preview color-${piece.colors[i]}`;
+      cell.appendChild(p);
+    }
+  });
+}
+
+function canPlace(by, bx, piece) {
+  return piece.shape.every(s => {
+    const ny = by + s[0], nx = bx + s[1];
+    return ny < SIZE && nx < SIZE && board[ny][nx] === 0;
+  });
+}
+
+function placePiece(by, bx, piece) {
+  if(!canPlace(by, bx, piece)) return false;
+  piece.shape.forEach((s, i) => {
+    const color = piece.colors[i];
+    board[by+s[0]][bx+s[1]] = color;
+    if(counts[color] !== undefined) counts[color]++;
+  });
+  return true;
+}
+
+function checkClear() {
+  let linesY = [], linesX = [];
+  for(let i=0; i<SIZE; i++) {
+    if(board[i].every(v => v > 0)) linesY.push(i);
+    if(board.every(row => row[i] > 0)) linesX.push(i);
+  }
+  
+  linesY.forEach(y => board[y].fill(0));
+  linesX.forEach(x => board.forEach(row => row[x] = 0));
+
+  // ノルマチェックと色変換
+  [2,3,4].forEach(c => {
+    if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
+      clearedColors.add(c);
+      // 盤面のクリアされた色をオレンジ（color-1）に [cite: 2026-01-05]
+      for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(board[y][x] === c) board[y][x] = 1;
+      // 手持ちのクリアされた色も変換 [cite: 2026-01-05]
+      hand.forEach(p => {
+        if(p) p.colors = p.colors.map(col => col === c ? 1 : col);
+      });
+    }
+  });
+
+  if(clearedColors.size === 3) document.getElementById('clearScreen').classList.add('show');
+}
+
+function render() {
+  document.querySelectorAll('.cell').forEach(el => {
+    const x = el.dataset.x, y = el.dataset.y;
     const v = board[y][x];
     el.className = 'cell' + (v ? ` color-${v} filled` : '');
   });
 }
 
-function createPiece(origShape, cellColors) {
-  const minY = Math.min(...origShape.map(p => p[0]));
-  const minX = Math.min(...origShape.map(p => p[1]));
-
-  const shape = origShape.map(([y,x]) => [y - minY, x - minX]);
-
-  const h = 1 + Math.max(...shape.map(p => p[0]));
-  const w = 1 + Math.max(...shape.map(p => p[1]));
-
-  const grid = document.createElement('div');
-  grid.className = 'piece-grid';
-  grid.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
-  grid.style.gridTemplateRows = `repeat(${h}, 1fr)`;
-
-  let cellIndex = 0;
-  for(let gy = 0; gy < h; gy++) {
-    for(let gx = 0; gx < w; gx++) {
-      const cell = document.createElement('div');
-      cell.className = 'piece-cell';
-      if(shape.some(([sy,sx]) => sy === gy && sx === gx)) {
-        const thisColor = cellColors[cellIndex % cellColors.length];
-        cell.className += ` filled color-${thisColor}`;
-        cellIndex++;
-      }
-      grid.appendChild(cell);
-    }
-  }
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'piece';
-  wrapper.appendChild(grid);
-  wrapper.draggable = !isTouchDevice;
-
-  wrapper._shape = shape;
-  wrapper._cellColors = cellColors;
-
-  if (isTouchDevice) {
-    let startX, startY, startTime;
-
-    wrapper.addEventListener('touchstart', e => {
-      if(gameOver) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const touch = e.touches[0];
-      startX = touch.clientX;
-      startY = touch.clientY;
-      startTime = Date.now();
-
-      const rect = wrapper.getBoundingClientRect();
-      const relX = touch.clientX - rect.left;
-      const relY = touch.clientY - rect.top;
-
-      const cell = wrapper.querySelector('.piece-cell');
-      const cellSize = cell ? cell.offsetWidth : 46;
-      dragOffset.dx = Math.min(Math.max(0, Math.floor(relX / cellSize)), w - 1);
-      dragOffset.dy = Math.min(Math.max(0, Math.floor(relY / cellSize)), h - 1);
-
-      currentDragPiece = hand.find(p => p.el === wrapper);
-      wrapper.classList.add('dragging');
-    });
-
-    wrapper.addEventListener('touchmove', e => {
-      if(!currentDragPiece) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      const touch = e.touches[0];
-      const rect = boardEl.getBoundingClientRect();
-      const relX = touch.clientX - rect.left;
-      const relY = touch.clientY - rect.top;
-
-      const cellWidth = boardEl.clientWidth / SIZE;
-      const cellHeight = boardEl.clientHeight / SIZE;
-
-      const dropX = Math.floor(relX / cellWidth);
-      const dropY = Math.floor(relY / cellHeight);
-
-      if(dropX >= 0 && dropX < SIZE && dropY >= 0 && dropY < SIZE) {
-        const baseX = dropX - dragOffset.dx;
-        const baseY = dropY - dragOffset.dy;
-        showPreview(baseY, baseX, currentDragPiece);
-      } else {
-        clearPreview();
-      }
-    });
-
-    wrapper.addEventListener('touchend', e => {
-      if(!currentDragPiece) return;
-      e.preventDefault();
-      e.stopPropagation();
-
-      const touch = e.changedTouches[0];
-      const rect = boardEl.getBoundingClientRect();
-      const relX = touch.clientX - rect.left;
-      const relY = touch.clientY - rect.top;
-
-      const cellWidth = boardEl.clientWidth / SIZE;
-      const cellHeight = boardEl.clientHeight / SIZE;
-
-      const dropX = Math.floor(relX / cellWidth);
-      const dropY = Math.floor(relY / cellHeight);
-
-      if(dropX >= 0 && dropX < SIZE && dropY >= 0 && dropY < SIZE) {
-        const targetCell = boardEl.querySelector(`[data-x="${dropX}"][data-y="${dropY}"]`);
-        if(targetCell) {
-          const baseX = dropX - dragOffset.dx;
-          const baseY = dropY - dragOffset.dy;
-
-          let canPlace = true;
-          for(const [dy, dx] of currentDragPiece.shape) {
-            const nx = baseX + dx;
-            const ny = baseY + dy;
-            if(nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE || board[ny][nx] !== 0) {
-              canPlace = false;
-              break;
-            }
-          }
-
-          if(canPlace) {
-            for(let i = 0; i < currentDragPiece.shape.length; i++) {
-              const [dy, dx] = currentDragPiece.shape[i];
-              const nx = baseX + dx;
-              const ny = baseY + dy;
-              board[ny][nx] = currentDragPiece.cellColors[i % currentDragPiece.cellColors.length];
-            }
-
-            currentDragPiece.el.remove();
-            hand.splice(hand.findIndex(p => p.el === currentDragPiece.el), 1);
-
-            moveCount++;
-            updateMoveCount();
-
-            if (hand.length === 0) {
-              refillHand();
-            }
-
-            renderBoard();
-            checkClear();
-          } else {
-            targetCell.style.background = 'rgba(255,60,60,0.4)';
-            setTimeout(() => targetCell.style.background = '', 300);
-          }
-        }
-      }
-
-      currentDragPiece = null;
-      wrapper.classList.remove('dragging');
-      clearPreview();
-    });
-  }
-
-  return { el: wrapper, shape, cellColors };
-}
-
-function refillHand() {
-  hand = [];
-  handEl.innerHTML = '';
-  for (let i = 0; i < 3; i++) {
-    const shape = SHAPES[Math.floor(Math.random() * SHAPES.length)];
-
-    let availColors = [1,2,3,4].filter(c => !cleared.has(c));
-    if (availColors.length === 0) availColors = [1];
-
-    const normaAvail = availColors.filter(c => NORMA_COLORS.includes(c));
-    let selectedColors = [];
-
-    while (selectedColors.length < shape.length) {
-      if (selectedColors.length < 1 && normaAvail.length > 0) {
-        selectedColors.push(normaAvail[Math.floor(Math.random() * normaAvail.length)]);
-      } else {
-        selectedColors.push(availColors[Math.floor(Math.random() * availColors.length)]);
-      }
-    }
-
-    const p = createPiece(shape, selectedColors);
-    hand.push(p);
-    handEl.appendChild(p.el);
-  }
-}
-
-function clearPreview() {
-  currentPreviewCells.forEach(cell => cell.innerHTML = '');
-  currentPreviewCells = [];
-}
-
-function showPreview(baseY, baseX, piece) {
-  clearPreview();
-
-  let canPreview = true;
-  for(const [dy, dx] of piece.shape) {
-    const ny = baseY + dy;
-    const nx = baseX + dx;
-    if(nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE || board[ny][nx] !== 0) {
-      canPreview = false;
-      break;
-    }
-  }
-
-  if(!canPreview) return;
-
-  for(let i = 0; i < piece.shape.length; i++) {
-    const [dy, dx] = piece.shape[i];
-    const ny = baseY + dy;
-    const nx = baseX + dx;
-    const targetCell = boardEl.querySelector(`[data-x="${nx}"][data-y="${ny}"]`);
-    if(targetCell) {
-      const preview = document.createElement('div');
-      const thisColor = piece.cellColors[i % piece.cellColors.length];
-      preview.className = `preview color-${thisColor}`;
-      targetCell.appendChild(preview);
-      currentPreviewCells.push(targetCell);
-    }
-  }
-}
-
-boardEl.addEventListener('dragover', e => {
-  e.preventDefault();
-  if(!currentDragPiece || isTouchDevice) return;
-
-  const cell = e.target.closest('.cell');
-  if(!cell) return;
-
-  const x = +cell.dataset.x;
-  const y = +cell.dataset.y;
-
-  const baseX = x - dragOffset.dx;
-  const baseY = y - dragOffset.dy;
-
-  showPreview(baseY, baseX, currentDragPiece);
-});
-
-boardEl.addEventListener('drop', e => {
-  if(gameOver || isTouchDevice) return;
-  e.preventDefault();
-
-  const idx = parseInt(e.dataTransfer.getData('text/plain'));
-  if(isNaN(idx) || idx < 0 || idx >= hand.length) return;
-
-  const piece = hand[idx];
-  const cell = e.target.closest('.cell');
-  if(!cell) return;
-
-  const dropX = +cell.dataset.x;
-  const dropY = +cell.dataset.y;
-
-  const baseX = dropX - dragOffset.dx;
-  const baseY = dropY - dragOffset.dy;
-
-  let canPlace = true;
-  for(const [dy, dx] of piece.shape) {
-    const nx = baseX + dx;
-    const ny = baseY + dy;
-    if(nx < 0 || nx >= SIZE || ny < 0 || ny >= SIZE || board[ny][nx] !== 0) {
-      canPlace = false;
-      break;
-    }
-  }
-
-  clearPreview();
-
-  if(!canPlace) {
-    cell.style.background = 'rgba(255,60,60,0.4)';
-    setTimeout(() => cell.style.background = '', 300);
-    return;
-  }
-
-  for(let i = 0; i < piece.shape.length; i++) {
-    const [dy, dx] = piece.shape[i];
-    const nx = baseX + dx;
-    const ny = baseY + dy;
-    board[ny][nx] = piece.cellColors[i % piece.cellColors.length];
-  }
-
-  piece.el.remove();
-  hand.splice(idx, 1);
-
-  moveCount++;
-  updateMoveCount();
-
-  if (hand.length === 0) {
-    refillHand();
-  }
-
-  renderBoard();
-  checkClear();
-});
-
-function checkClear() {
-  let changed = false;
-  const erased = {1:0,2:0,3:0,4:0};
-  const toAnimate = [];
-
-  for(let y = 0; y < SIZE; y++) {
-    if(board[y].every(v => v > 0)) {
-      for(let x = 0; x < SIZE; x++) {
-        const cell = boardEl.querySelector(`[data-x="${x}"][data-y="${y}"]`);
-        if(cell) toAnimate.push(cell);
-        erased[board[y][x]]++;
-        board[y][x] = 0;
-      }
-      changed = true;
-    }
-  }
-
-  for(let x = 0; x < SIZE; x++) {
-    if(board.every(row => row[x] > 0)) {
-      for(let y = 0; y < SIZE; y++) {
-        const cell = boardEl.querySelector(`[data-x="${x}"][data-y="${y}"]`);
-        if(cell) toAnimate.push(cell);
-        erased[board[y][x]]++;
-        board[y][x] = 0;
-      }
-      changed = true;
-    }
-  }
-
-  if(changed) {
-    toAnimate.forEach(cell => cell.classList.add('clearing'));
-
-    setTimeout(() => {
-      renderBoard();
-
-      NORMA_COLORS.forEach(c => {
-        counts[c] += (erased[c] || 0);
-        if(counts[c] >= (normaTargets[c] || 5) && !cleared.has(c)) {
-          cleared.add(c);
-          for(let y = 0; y < SIZE; y++) for(let x = 0; x < SIZE; x++) {
-            if(board[y][x] === c) board[y][x] = 1;
-          }
-          hand.forEach(p => {
-            for(let i = 0; i < p.cellColors.length; i++) {
-              if(p.cellColors[i] === c) p.cellColors[i] = 1;
-            }
-            p.el.querySelectorAll('.filled').forEach(el => {
-              el.classList.remove(`color-${c}`);
-              el.classList.add('color-1');
-            });
-          });
-          renderBoard();
-        }
-      });
-
-      updateNorma();
-
-      if(NORMA_COLORS.every(c => counts[c] >= normaTargets[c])) {
-        gameOver = true;
-        clearMoves.textContent = `クリア操作回数: ${moveCount}回`;
-        clearScreen.classList.add('show');
-      } else if(hand.length === 3 && !canPlaceAny()) {
-        gameOver = true;
-        gameoverEl.classList.add('show');
-      }
-    }, 600);
-  }
-}
-
-function canPlaceAny() {
-  for(const p of hand) {
-    for(let y = 0; y < SIZE; y++) for(let x = 0; x < SIZE; x++) {
-      let ok = true;
-      for(const [dy, dx] of p.shape) {
-        if(x + dx < 0 || x + dx >= SIZE || y + dy < 0 || y + dy >= SIZE || board[y + dy][x + dx] !== 0) {
-          ok = false;
-          break;
-        }
-      }
-      if(ok) return true;
-    }
-  }
-  return false;
-}
-
-function updateNorma() {
-  document.getElementById('c2').textContent = `${counts[2]}/${normaTargets[2] || 5}`;
-  document.getElementById('c3').textContent = `${counts[3]}/${normaTargets[3] || 5}`;
-  document.getElementById('c4').textContent = `${counts[4]}/${normaTargets[4] || 5}`;
+function updateUI() {
+  document.getElementById('c2').innerText = `${counts[2]}/${normaTargets[2]}`;
+  document.getElementById('c3').innerText = `${counts[3]}/${normaTargets[3]}`;
+  document.getElementById('c4').innerText = `${counts[4]}/${normaTargets[4]}`;
+  document.getElementById('moveCount').innerText = moveCount;
 }
 
 init();
-gameoverEl.addEventListener('click', init);
-restartBtn.addEventListener('click', init);
-resetBtn.addEventListener('click', init);
+document.getElementById('resetBtn').onclick = init;
+document.getElementById('restartBtn').onclick = init;
 </script>
 </body>
 </html>
