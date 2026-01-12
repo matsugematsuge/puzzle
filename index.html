@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>宝石パズルゲーム</title>
+<title>宝石パズルゲーム - 修正版</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
   /* 基本スタイル */
@@ -102,8 +102,7 @@
 </div>
 
 <script>
-/** * 音声生成 
- */
+/** * 音声生成 */
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, type, duration) {
   const osc = audioCtx.createOscillator();
@@ -116,9 +115,7 @@ function playTone(freq, type, duration) {
   osc.start(); osc.stop(audioCtx.currentTime + duration);
 }
 
-/**
- * ブロック定義と設定 [cite: 2026-01-05]
- */
+/** * ブロック定義と設定 */
 const SIZE = 8;
 const BLOCK_DEFINITIONS = [
   { name: "ナチュラル", freq: 8, shape: [[0,0], [1,0], [1,1], [2,1]], minN: 1, maxN: 2 },
@@ -156,7 +153,6 @@ function getAllVariants(shape) {
     return s.map(p => [p[0] - minY, p[1] - minX]).sort((a,b) => a[0]-b[0] || a[1]-b[1]);
   };
   const isSame = (s1, s2) => JSON.stringify(s1) === JSON.stringify(s2);
-
   let current = shape;
   for (let r = 0; r < 4; r++) {
     [current, current.map(p => [p[0], -p[1]]), current.map(p => [-p[0], p[1]])].forEach(variant => {
@@ -170,8 +166,11 @@ function getAllVariants(shape) {
 
 function init() {
   board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
-  counts = {2:0, 3:0, 4:0}; clearedColors.clear();
-  moveCount = 0; gameOver = false;
+  counts = {2:0, 3:0, 4:0}; 
+  clearedColors.clear();
+  moveCount = 0; 
+  gameOver = false;
+
   const boardEl = document.getElementById('board');
   boardEl.innerHTML = '';
   for(let y=0; y<SIZE; y++) {
@@ -181,6 +180,14 @@ function init() {
       boardEl.appendChild(cell);
     }
   }
+
+  // 初期盤面の宝石配置 (修正箇所)
+  for(let i=0; i<10; i++) {
+    let x, y;
+    do { x = Math.floor(Math.random()*SIZE); y = Math.floor(Math.random()*SIZE); } while(board[y][x] !== 0);
+    board[y][x] = Math.floor(Math.random()*4) + 1;
+  }
+
   refillHand(); render(); updateUI();
   document.querySelectorAll('.overlay').forEach(el => el.classList.remove('show'));
 }
@@ -220,7 +227,6 @@ function createPieceEl(piece, index) {
   const inner = document.createElement('div');
   inner.className = 'piece-grid';
   inner.style.gridTemplateColumns = `repeat(${w}, 1fr)`;
-  
   for(let y=0; y<h; y++) {
     for(let x=0; x<w; x++) {
       const cell = document.createElement('div');
@@ -231,7 +237,6 @@ function createPieceEl(piece, index) {
     }
   }
   grid.appendChild(inner);
-
   grid.addEventListener('touchstart', (e) => {
     if(gameOver) return;
     if(audioCtx.state === 'suspended') audioCtx.resume();
@@ -268,7 +273,6 @@ function handleEnd(e) {
   const rect = boardEl.getBoundingClientRect();
   const dropX = Math.floor((touch.clientX - rect.left) / (rect.width / SIZE));
   const dropY = Math.floor((touch.clientY - rect.top) / (rect.height / SIZE));
-
   if(placePiece(dropY - dragOffset.dy, dropX - dragOffset.dx, hand[activeIdx])) {
     playTone(660, 'sine', 0.1);
     hand[activeIdx] = null;
@@ -302,12 +306,9 @@ function canPlace(by, bx, piece) {
   });
 }
 
-// 置く時はカウントしない
 function placePiece(by, bx, piece) {
   if(!canPlace(by, bx, piece)) return false;
-  piece.shape.forEach((s, i) => {
-    board[by+s[0]][bx+s[1]] = piece.colors[i];
-  });
+  piece.shape.forEach((s, i) => { board[by+s[0]][bx+s[1]] = piece.colors[i]; });
   return true;
 }
 
@@ -317,37 +318,26 @@ function checkBoard() {
     if(board[i].every(v => v > 0)) linesY.push(i);
     if(board.every(row => row[i] > 0)) linesX.push(i);
   }
-  
   if(linesY.length > 0 || linesX.length > 0) {
     playTone(880, 'sine', 0.2);
-    
-    // 消えるマスの色を確認してカウント [cite: 2026-01-05]
     let cellsToClear = new Set();
     linesY.forEach(y => { for(let x=0; x<SIZE; x++) cellsToClear.add(`${y},${x}`); });
     linesX.forEach(x => { for(let y=0; y<SIZE; y++) cellsToClear.add(`${y},${x}`); });
-
     cellsToClear.forEach(coord => {
       const [y, x] = coord.split(',').map(Number);
       const color = board[y][x];
-      if (counts[color] !== undefined && !clearedColors.has(color)) {
-        counts[color]++; // ここで初めてノルマに加算
-      }
+      if (counts[color] !== undefined && !clearedColors.has(color)) counts[color]++;
       board[y][x] = 0;
     });
-
-    // 消去後のノルマ判定 [cite: 2026-01-05]
     [2,3,4].forEach(c => {
       if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
         clearedColors.add(c);
         playTone(1320, 'square', 0.3);
-        // 盤面に残っている同色を無色化
         for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(board[y][x] === c) board[y][x] = 1;
-        // 手持ちの同色を無色化
         hand.forEach(p => { if(p) p.colors = p.colors.map(col => col === c ? 1 : col); });
       }
     });
   }
-
   if(clearedColors.size === 3) {
     gameOver = true;
     document.getElementById('clear-stats').innerText = `クリア操作回数: ${moveCount}回`;
@@ -361,7 +351,7 @@ function checkBoard() {
 function canPlaceAny() {
   return hand.some(p => {
     if(!p) return false;
-    for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) { if(canPlace(y, x, p)) return true; }
+    for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(canPlace(y, x, p)) return true;
     return false;
   });
 }
