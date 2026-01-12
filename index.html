@@ -35,7 +35,7 @@
   .norma-pink  { color: #ff99dd; }
   .norma-yellow{ color: #ffff88; }
 
-  /* 盤面 */
+  /* 盤面：レスポンシブ設計 */
   #board-container {
     background: #0a0a1a; border: 4px solid #443366; border-radius: 8px;
     width: 100%; aspect-ratio: 1 / 1; position: relative;
@@ -48,10 +48,10 @@
   
   /* 宝石の色 */
   .filled { box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-  .color-1 { background: #a0a0b0; } /* 無色（グレー） */
-  .color-2 { background: #66ff99; } /* 緑 */
-  .color-3 { background: #ff99dd; } /* ピンク */
-  .color-4 { background: #ffff88; } /* 黄色 */
+  .color-1 { background: #a0a0b0; } /* 無色グレー */
+  .color-2 { background: #66ff99; }
+  .color-3 { background: #ff99dd; }
+  .color-4 { background: #ffff88; }
 
   /* 手持ちブロック */
   #hand {
@@ -61,7 +61,7 @@
   .piece-grid { display: grid; gap: 2px; }
   .piece-cell { width: 30px; height: 30px; border-radius: 4px; }
 
-  .preview { position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5; }
+  .preview { position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5; pointer-events: none; }
 
   /* オーバーレイ */
   .overlay {
@@ -72,9 +72,8 @@
   .overlay.show { opacity: 1; pointer-events: all; }
   .restart-btn {
     margin-top: 15px; padding: 12px 30px; background: #6644aa; color: white;
-    border: none; border-radius: 25px; font-weight: bold; cursor: pointer;
+    border: none; border-radius: 25px; font-weight: bold;
   }
-  #clear-stats { font-size: 1.2rem; margin-top: 10px; color: #ff99dd; }
 </style>
 </head>
 <body>
@@ -95,7 +94,7 @@
     <div class="overlay" id="gameover">GAME OVER</div>
     <div class="overlay" id="clearScreen">
       <h2 style="margin:0; color:#ffff88;">🎉 CLEAR! 🎉</h2>
-      <div id="clear-stats"></div>
+      <div id="clear-stats" style="margin-top:10px; font-size:1.2rem;"></div>
       <button class="restart-btn" id="restartBtn">もう一度あそぶ</button>
     </div>
   </div>
@@ -104,7 +103,7 @@
 </div>
 
 <script>
-// --- 音声生成機能 ---
+// 音声生成
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 function playTone(freq, type, duration) {
   const osc = audioCtx.createOscillator();
@@ -113,21 +112,29 @@ function playTone(freq, type, duration) {
   osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
   gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
   gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.start(); osc.stop(audioCtx.currentTime + duration);
 }
 
 const SIZE = 8;
 let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
-let counts = {2:0, 3:0, 4:0}, normaTargets = {2:5, 3:5, 4:10};
-let clearedColors = new Set(), hand = [], moveCount = 0, gameOver = false;
+let counts = {2:0, 3:0, 4:0};
+let normaTargets = {2:5, 3:5, 4:10};
+let clearedColors = new Set();
+let hand = [];
+let moveCount = 0;
+let gameOver = false;
+
+// ドラッグ位置保持用
+let dragOffset = { dx: 0, dy: 0 };
+let activeIdx = -1;
+let dragEl = null;
 
 const SHAPES = [
   [[0,0],[1,0],[2,0],[2,1]], [[0,0],[0,1],[0,2],[1,2]],
   [[0,0],[0,1]], [[0,0],[0,1],[0,2],[0,3]],
-  [[0,0],[0,1],[1,0],[1,1]], [[0,0],[0,1],[0,2],[1,1]]
+  [[0,0],[0,1],[1,0],[1,1]], [[0,0],[0,1],[0,2],[1,1]],
+  [[1,0],[1,1],[1,2],[0,1]], [[0,0],[1,0],[2,0],[1,1]]
 ];
 
 function init() {
@@ -196,46 +203,77 @@ function createPieceEl(piece, index) {
   }
   grid.appendChild(inner);
 
+  // ドラッグ開始ロジック
   grid.addEventListener('touchstart', (e) => {
     if(gameOver) return;
     if(audioCtx.state === 'suspended') audioCtx.resume();
-    activeIdx = index; dragEl = grid;
+    const touch = e.touches[0];
+    const rect = grid.getBoundingClientRect();
+    
+    // どのセルを触ったか計算してオフセットを保持
+    const relX = touch.clientX - rect.left;
+    const relY = touch.clientY - rect.top;
+    const cellSize = rect.width / w;
+    dragOffset.dx = Math.floor(relX / cellSize);
+    dragOffset.dy = Math.floor(relY / cellSize);
+
+    activeIdx = index;
+    dragEl = grid;
     grid.style.transform = 'scale(1.1)';
   });
+
   grid.addEventListener('touchmove', handleMove);
   grid.addEventListener('touchend', handleEnd);
   return grid;
 }
 
-let activeIdx = -1, dragEl = null, lastTarget = null;
-
 function handleMove(e) {
   if(activeIdx === -1) return;
   const touch = e.touches[0];
-  const boardRect = document.getElementById('board').getBoundingClientRect();
-  const x = Math.floor((touch.clientX - boardRect.left) / (boardRect.width / SIZE));
-  const y = Math.floor((touch.clientY - boardRect.top) / (boardRect.height / SIZE));
+  const boardEl = document.getElementById('board');
+  const rect = boardEl.getBoundingClientRect();
+  
+  // 指の位置から盤面上の座標を特定
+  const dropX = Math.floor((touch.clientX - rect.left) / (rect.width / SIZE));
+  const dropY = Math.floor((touch.clientY - rect.top) / (rect.height / SIZE));
 
-  document.querySelectorAll('.preview').forEach(p => p.remove());
-  if(x >= 0 && x < SIZE && y >= 0 && y < SIZE) {
-    showPreview(y, x, hand[activeIdx]);
-    lastTarget = {x, y};
-  } else { lastTarget = null; }
+  // オフセットを引いて左上基準の座標(baseX, baseY)を算出
+  const baseX = dropX - dragOffset.dx;
+  const baseY = dropY - dragOffset.dy;
+
+  clearPreview();
+  if(dropX >= 0 && dropX < SIZE && dropY >= 0 && dropY < SIZE) {
+    showPreview(baseY, baseX, hand[activeIdx]);
+  }
 }
 
-function handleEnd() {
+function handleEnd(e) {
   if(activeIdx === -1) return;
-  if(lastTarget && placePiece(lastTarget.y, lastTarget.x, hand[activeIdx])) {
-    playTone(660, 'sine', 0.1); // 置いた時の音
+  const touch = e.changedTouches[0];
+  const boardEl = document.getElementById('board');
+  const rect = boardEl.getBoundingClientRect();
+  const dropX = Math.floor((touch.clientX - rect.left) / (rect.width / SIZE));
+  const dropY = Math.floor((touch.clientY - rect.top) / (rect.height / SIZE));
+  
+  const baseX = dropX - dragOffset.dx;
+  const baseY = dropY - dragOffset.dy;
+
+  if(placePiece(baseY, baseX, hand[activeIdx])) {
+    playTone(660, 'sine', 0.1);
     hand[activeIdx] = null;
     dragEl.style.visibility = 'hidden';
     moveCount++;
     if(hand.every(h => h === null)) refillHand();
     checkBoard();
   }
+
   if(dragEl) dragEl.style.transform = '';
-  document.querySelectorAll('.preview').forEach(p => p.remove());
+  clearPreview();
   activeIdx = -1; render(); updateUI();
+}
+
+function clearPreview() {
+  document.querySelectorAll('.preview').forEach(p => p.remove());
 }
 
 function showPreview(by, bx, piece) {
@@ -253,16 +291,15 @@ function showPreview(by, bx, piece) {
 function canPlace(by, bx, piece) {
   return piece.shape.every(s => {
     const ny = by + s[0], nx = bx + s[1];
-    return ny < SIZE && nx < SIZE && board[ny][nx] === 0;
+    return ny >= 0 && ny < SIZE && nx >= 0 && nx < SIZE && board[ny][nx] === 0;
   });
 }
 
 function placePiece(by, bx, piece) {
   if(!canPlace(by, bx, piece)) return false;
   piece.shape.forEach((s, i) => {
-    const color = piece.colors[i];
-    board[by+s[0]][bx+s[1]] = color;
-    if(counts[color] !== undefined) counts[color]++;
+    board[by+s[0]][bx+s[1]] = piece.colors[i];
+    if(counts[piece.colors[i]] !== undefined) counts[piece.colors[i]]++;
   });
   return true;
 }
@@ -275,7 +312,7 @@ function checkBoard() {
   }
   
   if(linesY.length > 0 || linesX.length > 0) {
-    playTone(880, 'sine', 0.2); // 列が消えた時の音
+    playTone(880, 'sine', 0.2);
     linesY.forEach(y => board[y].fill(0));
     linesX.forEach(x => board.forEach(row => row[x] = 0));
   }
@@ -283,7 +320,7 @@ function checkBoard() {
   [2,3,4].forEach(c => {
     if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
       clearedColors.add(c);
-      playTone(1320, 'square', 0.3); // ノルマクリアの音
+      playTone(1320, 'square', 0.3);
       for(let y=0; y<SIZE; y++) for(let x=0; x<SIZE; x++) if(board[y][x] === c) board[y][x] = 1;
       hand.forEach(p => { if(p) p.colors = p.colors.map(col => col === c ? 1 : col); });
     }
@@ -291,7 +328,7 @@ function checkBoard() {
 
   if(clearedColors.size === 3) {
     gameOver = true;
-    document.getElementById('clear-stats').innerText = `合計操作回数: ${moveCount}回`;
+    document.getElementById('clear-stats').innerText = `クリア操作回数: ${moveCount}回`;
     document.getElementById('clearScreen').classList.add('show');
   }
 }
