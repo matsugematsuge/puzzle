@@ -2,10 +2,9 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<title>宝石パズルゲーム - 修正版</title>
+<title>宝石パズルゲーム - 最終安定版</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <style>
-  /* 基本スタイル */
   * {
     touch-action: none !important;
     user-select: none;
@@ -24,12 +23,12 @@
   }
 
   /* 上部UI */
-  #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-  #norma { display: flex; gap: 8px; }
+  #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  #norma { display: flex; gap: 6px; }
   .norma-item {
     background: rgba(40,20,80,0.7); border: 2px solid #6644aa; border-radius: 12px;
-    padding: 4px 10px; text-align: center; min-width: 70px;
-    font-size: 0.8rem; font-weight: bold; display: flex; align-items: center; gap: 4px;
+    padding: 4px 8px; text-align: center; min-width: 65px;
+    font-size: 0.75rem; font-weight: bold; display: flex; align-items: center; gap: 4px;
   }
   .norma-green { color: #66ff99; }
   .norma-pink  { color: #ff99dd; }
@@ -39,6 +38,7 @@
   #board-container {
     background: #0a0a1a; border: 4px solid #443366; border-radius: 8px;
     width: 100%; aspect-ratio: 1 / 1; position: relative;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
   }
   #board {
     display: grid; grid-template-columns: repeat(8, 1fr); grid-template-rows: repeat(8, 1fr);
@@ -47,21 +47,21 @@
   .cell { background: rgba(255,255,255,0.05); border-radius: 4px; position: relative; }
   
   /* 宝石の色 */
-  .filled { box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
-  .color-1 { background: #a0a0b0; } /* 無色グレー */
-  .color-2 { background: #66ff99; }
-  .color-3 { background: #ff99dd; }
-  .color-4 { background: #ffff88; }
+  .filled { box-shadow: inset 0 0 8px rgba(0,0,0,0.6); }
+  .color-1 { background: #a0a0b0; border: 1px solid rgba(255,255,255,0.2); }
+  .color-2 { background: #66ff99; border: 1px solid rgba(255,255,255,0.3); }
+  .color-3 { background: #ff99dd; border: 1px solid rgba(255,255,255,0.3); }
+  .color-4 { background: #ffff88; border: 1px solid rgba(255,255,255,0.3); }
 
   /* 手持ちブロック */
   #hand {
-    flex: 1; display: flex; justify-content: space-around; align-items: center; padding: 10px 0;
+    flex: 1; display: flex; justify-content: space-around; align-items: center; padding: 5px 0;
   }
   .piece { transition: transform 0.1s; cursor: grab; }
-  .piece-grid { display: grid; gap: 2px; }
-  .piece-cell { width: 28px; height: 28px; border-radius: 4px; }
+  .piece-grid { display: grid; gap: 1px; }
+  .piece-cell { width: 22px; height: 22px; border-radius: 3px; }
 
-  .preview { position: absolute; inset: 0; opacity: 0.4; border-radius: 4px; z-index: 5; pointer-events: none; }
+  .preview { position: absolute; inset: 0; opacity: 0.5; border-radius: 4px; z-index: 5; pointer-events: none; }
 
   .overlay {
     position: absolute; inset: 0; background: rgba(0,0,0,0.9);
@@ -102,20 +102,32 @@
 </div>
 
 <script>
-/** * 音声生成 */
+// --- 音声生成ロジック (スマホ対応版) ---
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
 function playTone(freq, type, duration) {
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  osc.connect(gain); gain.connect(audioCtx.destination);
-  osc.start(); osc.stop(audioCtx.currentTime + duration);
+  // ブラウザの自動再生制限対策：サスペンド状態なら再開を試みる
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime); // 音量を0.1に調整
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e) {
+    console.warn("Audio Context Error", e);
+  }
 }
 
-/** * ブロック定義と設定 */
+// 定数・設定
 const SIZE = 8;
 const BLOCK_DEFINITIONS = [
   { name: "ナチュラル", freq: 8, shape: [[0,0], [1,0], [1,1], [2,1]], minN: 1, maxN: 2 },
@@ -134,7 +146,7 @@ const BLOCK_DEFINITIONS = [
   { name: "四角_大", freq: 5, shape: [[0,0], [0,1], [0,2], [1,0], [1,1], [1,2]], minN: 1, maxN: 4 }
 ];
 
-let board = Array(SIZE).fill().map(()=>Array(SIZE).fill(0));
+let board = [];
 let counts = {2:0, 3:0, 4:0};
 let normaTargets = {2:5, 3:5, 4:10};
 let clearedColors = new Set();
@@ -145,6 +157,7 @@ let dragOffset = { dx: 0, dy: 0 };
 let activeIdx = -1;
 let dragEl = null;
 
+// 形状バリエーション生成
 function getAllVariants(shape) {
   const variants = [];
   const normalize = (s) => {
@@ -176,16 +189,18 @@ function init() {
   for(let y=0; y<SIZE; y++) {
     for(let x=0; x<SIZE; x++) {
       const cell = document.createElement('div');
-      cell.className = 'cell'; cell.dataset.x = x; cell.dataset.y = y;
+      cell.className = 'cell'; cell.id = `cell-${y}-${x}`;
+      cell.dataset.x = x; cell.dataset.y = y;
       boardEl.appendChild(cell);
     }
   }
 
-  // 初期盤面の宝石配置 (修正箇所)
+  // 初期宝石の配置
   for(let i=0; i<10; i++) {
-    let x, y;
-    do { x = Math.floor(Math.random()*SIZE); y = Math.floor(Math.random()*SIZE); } while(board[y][x] !== 0);
-    board[y][x] = Math.floor(Math.random()*4) + 1;
+    let x = Math.floor(Math.random()*SIZE);
+    let y = Math.floor(Math.random()*SIZE);
+    if(board[y][x] === 0) board[y][x] = Math.floor(Math.random()*4) + 1;
+    else i--;
   }
 
   refillHand(); render(); updateUI();
@@ -201,18 +216,15 @@ function refillHand() {
     let rand = Math.random() * totalFreq;
     let base;
     for (const b of BLOCK_DEFINITIONS) { if (rand < b.freq) { base = b; break; } rand -= b.freq; }
-
     const variants = getAllVariants(base.shape);
     const selectedShape = variants[Math.floor(Math.random() * variants.length)];
     let availNorma = [2, 3, 4].filter(c => !clearedColors.has(c));
     const targetNormaCount = Math.floor(Math.random() * (base.maxN - base.minN + 1)) + base.minN;
     const colorIndices = Array.from({length: selectedShape.length}, (_, i) => i).sort(() => Math.random() - 0.5);
     const pieceColors = Array(selectedShape.length).fill(1);
-    
     for (let n = 0; n < targetNormaCount && n < selectedShape.length; n++) {
       pieceColors[colorIndices[n]] = availNorma.length > 0 ? availNorma[Math.floor(Math.random() * availNorma.length)] : 1;
     }
-
     const pieceObj = { shape: selectedShape, colors: pieceColors };
     hand.push(pieceObj);
     handEl.appendChild(createPieceEl(pieceObj, i));
@@ -237,24 +249,29 @@ function createPieceEl(piece, index) {
     }
   }
   grid.appendChild(inner);
+
   grid.addEventListener('touchstart', (e) => {
     if(gameOver) return;
-    if(audioCtx.state === 'suspended') audioCtx.resume();
+    if (audioCtx.state === 'suspended') audioCtx.resume(); // タッチ時に音声を有効化
     const touch = e.touches[0];
     const rect = grid.getBoundingClientRect();
-    const cellSize = rect.width / w;
-    dragOffset.dx = Math.floor((touch.clientX - rect.left) / cellSize);
-    dragOffset.dy = Math.floor((touch.clientY - rect.top) / cellSize);
+    const cellW = rect.width / w;
+    const cellH = rect.height / h;
+    dragOffset.dx = Math.floor((touch.clientX - rect.left) / cellW);
+    dragOffset.dy = Math.floor((touch.clientY - rect.top) / cellH);
     activeIdx = index; dragEl = grid;
-    grid.style.transform = 'scale(1.1)';
-  });
-  grid.addEventListener('touchmove', handleMove);
-  grid.addEventListener('touchend', handleEnd);
+    grid.style.transform = 'scale(1.15)';
+    grid.style.opacity = '0.8';
+  }, {passive: false});
+
+  grid.addEventListener('touchmove', handleMove, {passive: false});
+  grid.addEventListener('touchend', handleEnd, {passive: false});
   return grid;
 }
 
 function handleMove(e) {
   if(activeIdx === -1) return;
+  e.preventDefault();
   const touch = e.touches[0];
   const boardEl = document.getElementById('board');
   const rect = boardEl.getBoundingClientRect();
@@ -281,7 +298,7 @@ function handleEnd(e) {
     if(hand.every(h => h === null)) refillHand();
     checkBoard();
   }
-  if(dragEl) dragEl.style.transform = '';
+  if(dragEl) { dragEl.style.transform = ''; dragEl.style.opacity = '1'; }
   clearPreview(); activeIdx = -1; render(); updateUI();
 }
 
@@ -290,7 +307,7 @@ function clearPreview() { document.querySelectorAll('.preview').forEach(p => p.r
 function showPreview(by, bx, piece) {
   if(!canPlace(by, bx, piece)) return;
   piece.shape.forEach((s, i) => {
-    const cell = document.querySelector(`.cell[data-x="${bx+s[1]}"][data-y="${by+s[0]}"]`);
+    const cell = document.getElementById(`cell-${by+s[0]}-${bx+s[1]}`);
     if(cell) {
       const p = document.createElement('div');
       p.className = `preview color-${piece.colors[i]}`;
@@ -316,19 +333,24 @@ function checkBoard() {
   let linesY = [], linesX = [];
   for(let i=0; i<SIZE; i++) {
     if(board[i].every(v => v > 0)) linesY.push(i);
-    if(board.every(row => row[i] > 0)) linesX.push(i);
+    let colFull = true;
+    for(let j=0; j<SIZE; j++) if(board[j][i] === 0) colFull = false;
+    if(colFull) linesX.push(i);
   }
+
   if(linesY.length > 0 || linesX.length > 0) {
     playTone(880, 'sine', 0.2);
     let cellsToClear = new Set();
     linesY.forEach(y => { for(let x=0; x<SIZE; x++) cellsToClear.add(`${y},${x}`); });
     linesX.forEach(x => { for(let y=0; y<SIZE; y++) cellsToClear.add(`${y},${x}`); });
+
     cellsToClear.forEach(coord => {
       const [y, x] = coord.split(',').map(Number);
       const color = board[y][x];
       if (counts[color] !== undefined && !clearedColors.has(color)) counts[color]++;
       board[y][x] = 0;
     });
+
     [2,3,4].forEach(c => {
       if(counts[c] >= normaTargets[c] && !clearedColors.has(c)) {
         clearedColors.add(c);
@@ -342,7 +364,7 @@ function checkBoard() {
     gameOver = true;
     document.getElementById('clear-stats').innerText = `クリア操作回数: ${moveCount}回`;
     document.getElementById('clearScreen').classList.add('show');
-  } else if(hand.length === 3 && !canPlaceAny()) {
+  } else if(!canPlaceAny()) {
     gameOver = true;
     document.getElementById('gameover').classList.add('show');
   }
@@ -357,18 +379,24 @@ function canPlaceAny() {
 }
 
 function render() {
-  document.querySelectorAll('.cell').forEach(el => {
-    const v = board[el.dataset.y][el.dataset.x];
-    el.className = 'cell' + (v ? ` color-${v} filled` : '');
-  });
+  for(let y=0; y<SIZE; y++) {
+    for(let x=0; x<SIZE; x++) {
+      const el = document.getElementById(`cell-${y}-${x}`);
+      const v = board[y][x];
+      el.className = 'cell' + (v ? ` color-${v} filled` : '');
+    }
+  }
 }
 
 function updateUI() {
-  [2,3,4].forEach(c => { document.getElementById(`c${c}`).innerText = `${counts[c]}/${normaTargets[c]}`; });
+  [2,3,4].forEach(c => {
+    const el = document.getElementById(`c${c}`);
+    if(el) el.innerText = `${counts[c]}/${normaTargets[c]}`;
+  });
   document.getElementById('moveCount').innerText = moveCount;
 }
 
-init();
+window.onload = init;
 document.getElementById('resetBtn').onclick = init;
 document.getElementById('restartBtn').onclick = init;
 </script>
